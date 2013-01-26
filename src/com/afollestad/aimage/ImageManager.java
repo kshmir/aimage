@@ -17,6 +17,13 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.util.concurrent.*;
 
+/**
+ * <p>The most important class in the AImage library; downloads images, and handles caching them on the disk and in memory
+ * so they can quickly be retrieved. Also allows you to download images to fit a certain width and height.</p>
+ *
+ * <p>If you're using AImage for displaying images in your UI, see {@link com.afollestad.aimage.views.AImageView} and
+ * {@link com.afollestad.aimage.views.AspectAImageView} for easy-to-use options.</p>
+ */
 public class ImageManager {
 
     public ImageManager(Context context) {
@@ -38,9 +45,9 @@ public class ImageManager {
     private ExecutorService mNetworkExecutorService = newConfiguredThreadPool();
     private ExecutorService mDiskExecutorService = Executors.newCachedThreadPool(new LowPriorityThreadFactory());
 
-    public static final int MEM_CACHE_SIZE_KB = (int) (Runtime.getRuntime().maxMemory() / 2 / 1024);
-    public static final int DISK_CACHE_SIZE_KB = (10 * 1024);
-    public static final int ASYNC_THREAD_COUNT = (Runtime.getRuntime().availableProcessors() * 4);
+    protected static final int MEM_CACHE_SIZE_KB = (int) (Runtime.getRuntime().maxMemory() / 2 / 1024);
+    protected static final int DISK_CACHE_SIZE_KB = (10 * 1024);
+    protected static final int ASYNC_THREAD_COUNT = (Runtime.getRuntime().availableProcessors() * 4);
 
 
     private static String getKey(String source, Dimension dimen) {
@@ -53,6 +60,16 @@ public class ImageManager {
         return DigestUtils.sha256Hex(source);
     }
 
+    public Handler getHandler() {
+        return mHandler;
+    }
+
+
+    /**
+     * Gets an image from a URI on the calling thread and returns the result.
+     * @param source The URI to get the image from.
+     * @param dimen The optional target dimensions that the image will be resized to.
+     */
     public Bitmap get(String source, Dimension dimen) {
         if (source == null) {
             return null;
@@ -68,20 +85,24 @@ public class ImageManager {
         return bitmap;
     }
 
+    /**
+     * Gets an image from a URI on a separate thread and posts the results to a callback.
+     * @param source The URI to get the image from.
+     * @param dimen The optional target dimensions that the image will be resized to.
+     * @param callback The callback that the result will be posted to.
+     */
     public void get(final String source, final Dimension dimen, final ImageListener callback) {
         if (!Looper.getMainLooper().equals(Looper.myLooper())) {
             throw new RuntimeException("This must only be executed on the main UI Thread!");
         } else if (source == null) {
             return;
         }
-
         final String key = getKey(source, dimen);
         Bitmap bitmap = mLruCache.get(key);
-        if (bitmap != null) {
+        if (bitmap != null && callback != null) {
             callback.onImageReceived(source, bitmap);
         } else {
             mDiskExecutorService.execute(new Runnable() {
-
                 @Override
                 public void run() {
                     //TODO ? if (verifySourceOverTime(source, request)) {
@@ -90,7 +111,8 @@ public class ImageManager {
                         mHandler.post(new Runnable() {
                             @Override
                             public void run() {
-                                callback.onImageReceived(source, bitmap);
+                                if(callback != null)
+                                    callback.onImageReceived(source, bitmap);
                             }
                         });
                     } else {
@@ -102,7 +124,8 @@ public class ImageManager {
                                 mHandler.post(new Runnable() {
                                     @Override
                                     public void run() {
-                                        callback.onImageReceived(source, bitmap);
+                                        if(callback != null)
+                                            callback.onImageReceived(source, bitmap);
                                     }
                                 });
                             }
