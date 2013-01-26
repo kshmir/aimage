@@ -1,0 +1,291 @@
+package com.afollestad.aimage;
+
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.LruCache;
+import com.afollestad.aimage.cache.DigestUtils;
+import com.afollestad.aimage.cache.DiskLruCache;
+import com.afollestad.aimage.cache.IOUtils;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URL;
+import java.util.concurrent.*;
+
+public class ImageManager {
+
+    public ImageManager(Context context) {
+        this.context = context;
+        mLruCache = new LruCache<String, Bitmap>(MEM_CACHE_SIZE_KB * 1024) {
+            @Override
+            public int sizeOf(String key, Bitmap value) {
+                return value.getRowBytes() * value.getHeight();
+            }
+        };
+        mDiskLruCache = openDiskCache();
+    }
+
+    private Context context;
+    private static final Object[] LOCK = new Object[0];
+    private DiskLruCache mDiskLruCache;
+    private Handler mHandler = new Handler(Looper.getMainLooper());
+    private LruCache<String, Bitmap> mLruCache = newConfiguredLruCache();
+    private ExecutorService mNetworkExecutorService = newConfiguredThreadPool();
+    private ExecutorService mDiskExecutorService = Executors.newCachedThreadPool(new LowPriorityThreadFactory());
+
+    public static final int MEM_CACHE_SIZE_KB = (int) (Runtime.getRuntime().maxMemory() / 2 / 1024);
+    public static final int DISK_CACHE_SIZE_KB = (10 * 1024);
+    public static final int ASYNC_THREAD_COUNT = (Runtime.getRuntime().availableProcessors() * 4);
+
+
+    private static String getKey(String source, Dimension dimen) {
+        if (source == null) {
+            return null;
+        }
+        if (dimen != null && dimen.getWidth() > 0 && dimen.getHeight() > 0) {
+            source += dimen.toString();
+        }
+        return DigestUtils.sha256Hex(source);
+    }
+
+    public Bitmap get(String source, Dimension dimen) {
+        if (source == null) {
+            return null;
+        }
+        String key = getKey(source, dimen);
+        Bitmap bitmap = mLruCache.get(key);
+        if (bitmap == null) {
+            bitmap = getBitmapFromDisk(key);
+        }
+        if (bitmap == null) {
+            bitmap = getBitmapFromNetwork(key, source, dimen);
+        }
+        return bitmap;
+    }
+
+    public void get(final String source, final Dimension dimen, final ImageListener callback) {
+        if (!Looper.getMainLooper().equals(Looper.myLooper())) {
+            throw new RuntimeException("This must only be executed on the main UI Thread!");
+        } else if (source == null) {
+            return;
+        }
+
+        final String key = getKey(source, dimen);
+        Bitmap bitmap = mLruCache.get(key);
+        if (bitmap != null) {
+            callback.onImageReceived(source, bitmap);
+        } else {
+            mDiskExecutorService.execute(new Runnable() {
+
+                @Override
+                public void run() {
+                    //TODO ? if (verifySourceOverTime(source, request)) {
+                    final Bitmap bitmap = getBitmapFromDisk(key);
+                    if (bitmap != null) {
+                        mHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                callback.onImageReceived(source, bitmap);
+                            }
+                        });
+                    } else {
+                        mNetworkExecutorService.execute(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                final Bitmap bitmap = getBitmapFromNetwork(key, source, dimen);
+                                mHandler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        callback.onImageReceived(source, bitmap);
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    }
+
+
+    private Bitmap getBitmapFromDisk(String key) {
+        Bitmap bitmap = null;
+        DiskLruCache.Snapshot snapshot = null;
+        try {
+            snapshot = mDiskLruCache.get(key);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (snapshot != null) {
+                bitmap = decodeFromSnapshot(snapshot);
+                if (bitmap != null) {
+                    mLruCache.put(key, bitmap);
+                }
+            }
+        }
+        return bitmap;
+    }
+
+    private Bitmap getBitmapFromNetwork(String key, String source, Dimension dimen) {
+        byte[] byteArray = copyURLToByteArray(source);
+        if (byteArray != null) {
+            Bitmap bitmap = decodeByteArray(byteArray, dimen);
+            if (bitmap != null) {
+                copyBitmapToDiskLruCache(key, bitmap);
+                mLruCache.put(key, bitmap);
+                return bitmap;
+            }
+        }
+        return null;
+    }
+
+
+    private byte[] copyURLToByteArray(String source) {
+        InputStream inputStream = null;
+        ByteArrayOutputStream byteArrayOutputStream = null;
+        try {
+            inputStream = new URL(source).openConnection().getInputStream();
+            byteArrayOutputStream = new ByteArrayOutputStream();
+
+            IOUtils.copy(inputStream, byteArrayOutputStream);
+            return byteArrayOutputStream.toByteArray();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            IOUtils.closeQuietly(inputStream);
+            IOUtils.closeQuietly(byteArrayOutputStream);
+        }
+        return null;
+    }
+
+    private static Bitmap decodeByteArray(byte[] byteArray, Dimension dimen) {
+        try {
+            Bitmap bitmap;
+            BitmapFactory.Options bitmapFactoryOptions = getBitmapFactoryOptions();
+
+            synchronized (LOCK) {
+                if (dimen != null && !dimen.isZero()) {
+                    bitmapFactoryOptions.inJustDecodeBounds = true;
+                    BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length, bitmapFactoryOptions);
+
+                    int heightRatio = (int) Math.ceil(bitmapFactoryOptions.outHeight / (float) dimen.getHeight());
+                    int widthRatio = (int) Math.ceil(bitmapFactoryOptions.outWidth / (float) dimen.getWidth());
+
+                    if (heightRatio > 1 || widthRatio > 1) {
+                        if (heightRatio > widthRatio) {
+                            bitmapFactoryOptions.inSampleSize = heightRatio;
+                        } else {
+                            bitmapFactoryOptions.inSampleSize = widthRatio;
+                        }
+                    }
+                    bitmapFactoryOptions.inJustDecodeBounds = false;
+                }
+
+                bitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length, bitmapFactoryOptions);
+            }
+
+            return bitmap;
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+        return null;
+    }
+
+    private void copyBitmapToDiskLruCache(String key, Bitmap bitmap) {
+        DiskLruCache.Editor editor = null;
+        OutputStream outputStream = null;
+        try {
+            synchronized (LOCK) {
+                if (!context.getExternalCacheDir().exists()) {
+                    /*
+                     * We are in an unexpected state, our cache directory was
+                     * destroyed without our static instance being destroyed
+                     * also. The best thing we can do here is start over.
+                     */
+                    mDiskLruCache = openDiskCache();
+                }
+            }
+
+            /*
+             * We block here because Editor.edit will return null if another
+             * edit is in progress
+             */
+            while (editor == null) {
+                editor = mDiskLruCache.edit(key);
+                Thread.sleep(50);
+            }
+
+            outputStream = editor.newOutputStream(0);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 0, outputStream);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            IOUtils.closeQuietly(outputStream);
+            if (editor != null) {
+                try {
+                    editor.commit();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private static BitmapFactory.Options getBitmapFactoryOptions() {
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inPurgeable = true;
+        options.inInputShareable = true;
+        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+        return options;
+    }
+
+    private static Bitmap decodeFromSnapshot(DiskLruCache.Snapshot snapshot) {
+        InputStream inputStream = null;
+        try {
+            inputStream = snapshot.getInputStream(0);
+            synchronized (LOCK) {
+                return BitmapFactory.decodeStream(inputStream, null, getBitmapFactoryOptions());
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+        } finally {
+            IOUtils.closeQuietly(inputStream);
+            IOUtils.closeQuietly(snapshot);
+        }
+        return null;
+    }
+
+
+    public static ExecutorService newConfiguredThreadPool() {
+        int corePoolSize = 0;
+        int maximumPoolSize = ASYNC_THREAD_COUNT;
+        long keepAliveTime = 60L;
+        TimeUnit unit = TimeUnit.SECONDS;
+        BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<Runnable>();
+        RejectedExecutionHandler handler = new ThreadPoolExecutor.CallerRunsPolicy();
+        return new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, handler);
+    }
+
+    private static LruCache<String, Bitmap> newConfiguredLruCache() {
+        return new LruCache<String, Bitmap>(MEM_CACHE_SIZE_KB * 1024) {
+            @Override
+            public int sizeOf(String key, Bitmap value) {
+                return value.getRowBytes() * value.getHeight();
+            }
+        };
+    }
+
+    private DiskLruCache openDiskCache() {
+        try {
+            return DiskLruCache.open(context.getExternalCacheDir(), 1, 1, DISK_CACHE_SIZE_KB * 1024);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
