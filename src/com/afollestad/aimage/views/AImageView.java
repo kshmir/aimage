@@ -11,8 +11,8 @@ import com.afollestad.aimage.ImageManager;
 
 /**
  * An {@link ImageView} that wraps around the {@link ImageManager} class to asynchronously load images on a separate thread
- * and load them into the view with the associated width and height. The view waits until the view is measured so the
- * real measured width and height is used when loading the image.
+ * and load them into the view with the associated width and height. The view waits until it's measured so the
+ * real measured width and height are used when loading the image to size.
  */
 public class AImageView extends ImageView {
 

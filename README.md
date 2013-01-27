@@ -62,3 +62,26 @@ manager.get("http://www.android.com/images/whatsnew/jb-new-logo.png", null, new 
 ```
 
 Again, if you want to down sample the image, you can pass an instance of the Dimension class for the second parameter to get().
+
+## Views
+
+### AImageView
+
+Using the library is even easier when you use the AImageView in your XML layouts. Not only does it handle interacting with
+the ImageManager, it also waits until it's been measured (which isn't immediately when your app starts) and loads images
+to fit its own dimensions.
+
+```java
+ImageManager manager = new ImageManager(this);
+//Replace the view ID with whatever ID you're using in your XML layout
+AImageView aview = (AImageView)findViewById(R.id.image);
+aview.setAImageSource(manager, "http://www.android.com/images/whatsnew/jb-new-logo.png");
+````
+
+### AspectAImageView
+
+The AspectAImageView is the same as the AImageView class, but it automatically adjusts its height to keep aspect ratio with
+the image's width (even when the view is in a RelativeLayout and you're using FILL_PARENT/MATCH_PARENT or WRAP_CONTENT for dimensions).
+
+All that you have to do is replace "AImageView" with "AspectAImageView" in your layouts and code, and we'll take care of
+the rest.
