@@ -71,7 +71,7 @@ Using the library is even easier when you use the `AImageView` in your XML layou
 the `ImageManager`, it also waits until it's been measured (which isn't immediately when your app starts) and loads images
 to fit its own dimensions.
 
-To implement the `AImageView` your your XML layout, just replace `ImageView' with `com.afollestad.aimage.views.AImageView`,
+To implement the `AImageView` your your XML layout, just replace `ImageView` with `com.afollestad.aimage.views.AImageView`,
 then use code like this:
 
 ```java
@@ -83,8 +83,8 @@ aview.setAImageSource(manager, "http://www.android.com/images/whatsnew/jb-new-lo
 
 ### AspectAImageView
 
-The AspectAImageView is the same as the AImageView class, but it automatically adjusts its height to keep aspect ratio with
-the image's width (even when the view is in a RelativeLayout and you're using FILL_PARENT/MATCH_PARENT or WRAP_CONTENT for dimensions).
+The `AspectAImageView` is the same as the `AImageView` class, but it automatically adjusts its height to keep aspect ratio with
+the image's width (even when the view is in a `RelativeLayout` and you're using `FILL_PARENT`, `MATCH_PARENT`, or `WRAP_CONTENT` for dimensions).
 
-All that you have to do is replace "AImageView" with "AspectAImageView" in your layouts and code, and we'll take care of
+All that you have to do is replace `AImageView` with `AspectAImageView` in your layouts and code, and we'll take care of
 the rest.
