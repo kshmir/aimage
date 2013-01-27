@@ -11,8 +11,7 @@ The `ImageManager` is the most important class in the AImage library. It handles
 caching them on the disk and in memory so they can quickly be retrieved.
 
 It's recommend that you only initialize the `ImageManager` once and use the same instance everywhere, since a single
-instances holds your memory cache and creating a new instance would start with a fresh memory cache (the disk cache stays, however).
-
+instance holds your memory cache and creating a new instance would start with a fresh memory cache (the disk cache stays, however).
 
 ### Basics
 
@@ -77,7 +76,7 @@ to fit its own dimensions.
 
 To implement the `AImageView` in your XML layout, just replace `ImageView` with `com.afollestad.aimage.views.AImageView`,
 then use code like what's shown below. Again, it's recommend that you only initialize the `ImageManager` once and use the
-same instance everywhere, since a single instances holds your memory cache and creating a new instance would start with a
+same instance everywhere, since a single instance holds your memory cache and creating a new instance would start with a
 fresh memory cache (the disk cache stays, however).
 
 ```java
