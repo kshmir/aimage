@@ -10,6 +10,10 @@ layouts).
 The `ImageManager` is the most important class in the AImage library. It handles downloading images, and it handles
 caching them on the disk and in memory so they can quickly be retrieved.
 
+It's recommend that you only initialize the `ImageManager` once and use the same instance everywhere, since a single
+instances holds your memory cache and creating a new instance would start with a fresh cache.
+
+
 ### Basics
 
 Here is the most basic way to use the `ImageManager`, note that this **cannot** be used from the main UI thread. This method is
