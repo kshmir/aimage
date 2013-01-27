@@ -41,7 +41,7 @@ public class AImageView extends ImageView {
          * insures that correct dimensions will be used for the image loading size to optimize memory.
          */
         super.onSizeChanged(w, h, oldw, oldh);
-        if(aimage.isDebugEnabled())
+        if(aimage != null && aimage.isDebugEnabled())
             Log.i("AImageView", "onSizeChanged -- " + w + ":" + h);
         loadFromSource();
     }
