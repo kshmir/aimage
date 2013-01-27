@@ -76,7 +76,8 @@ the `ImageManager`, it also waits until it's been measured (which isn't immediat
 to fit its own dimensions.
 
 To implement the `AImageView` in your XML layout, just replace `ImageView` with `com.afollestad.aimage.views.AImageView`,
-then use code like this:
+then use code like what's shown below. Again, it's recommend that you only initialize the `ImageManager` once and use the
+same instance everywhere, since a single instances holds your memory cache and creating a new instance would start with a fresh cache.
 
 ```java
 ImageManager manager = new ImageManager(this);
