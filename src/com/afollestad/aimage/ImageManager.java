@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.util.LruCache;
 import com.afollestad.aimage.cache.DigestUtils;
 import com.afollestad.aimage.cache.DiskLruCache;
@@ -78,9 +79,14 @@ public class ImageManager {
         Bitmap bitmap = mLruCache.get(key);
         if (bitmap == null) {
             bitmap = getBitmapFromDisk(key);
+        } else {
+            Log.i("ImageManager", "Got " + source + " from the memory cache.");
         }
         if (bitmap == null) {
             bitmap = getBitmapFromNetwork(key, source, dimen);
+            Log.i("ImageManager", "Got " + source + " from the network.");
+        } else {
+            Log.i("ImageManager", "Got " + source + " from the disk cache.");
         }
         return bitmap;
     }
@@ -100,6 +106,7 @@ public class ImageManager {
         final String key = getKey(source, dimen);
         Bitmap bitmap = mLruCache.get(key);
         if (bitmap != null && callback != null) {
+            Log.i("ImageManager", "Got " + source + " from the memory cache.");
             callback.onImageReceived(source, bitmap);
         } else {
             mDiskExecutorService.execute(new Runnable() {
@@ -108,6 +115,7 @@ public class ImageManager {
                     //TODO ? if (verifySourceOverTime(source, request)) {
                     final Bitmap bitmap = getBitmapFromDisk(key);
                     if (bitmap != null) {
+                        Log.i("ImageManager", "Got " + source + " from the disk cache.");
                         mHandler.post(new Runnable() {
                             @Override
                             public void run() {
@@ -124,6 +132,7 @@ public class ImageManager {
                                 mHandler.post(new Runnable() {
                                     @Override
                                     public void run() {
+                                        Log.i("ImageManager", "Got " + source + " from the network.");
                                         if(callback != null)
                                             callback.onImageReceived(source, bitmap);
                                     }

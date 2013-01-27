@@ -7,12 +7,12 @@ layouts).
 
 ## Using the ImageManager
 
-The ImageManager is the most important class in the AImage library. It handles downloading images, and it handles
+The `ImageManager` is the most important class in the AImage library. It handles downloading images, and it handles
 caching them on the disk and in memory so they can quickly be retrieved.
 
 ### Basics
 
-Here is the most basic way to use the ImageManager, note that this **cannot** be used from the main UI thread. This method is
+Here is the most basic way to use the `ImageManager`, note that this **cannot** be used from the main UI thread. This method is
 blocking, and it uses network operations to download images that aren't cached, which Android does not let you do on the main thread.
 
 ```java
@@ -33,7 +33,7 @@ Bitmap jellybean = manager.get("http://www.android.com/images/whatsnew/jb-new-lo
 // ...do something with the downloaded Bitmap
 ```
 
-There's other ways of initializing the Dimension class to make it easier to get what you need.
+There's other ways of initializing the `Dimension` class to make it easier to get what you need.
 
 ```java
 // 50dp by 50dp (using a float value indicates dp)
@@ -61,15 +61,18 @@ manager.get("http://www.android.com/images/whatsnew/jb-new-logo.png", null, new 
 });
 ```
 
-Again, if you want to down sample the image, you can pass an instance of the Dimension class for the second parameter to get().
+Again, if you want to down sample the image, you can pass an instance of the `Dimension` class for the second parameter to `get()`.
 
 ## Views
 
 ### AImageView
 
-Using the library is even easier when you use the AImageView in your XML layouts. Not only does it handle interacting with
-the ImageManager, it also waits until it's been measured (which isn't immediately when your app starts) and loads images
+Using the library is even easier when you use the `AImageView` in your XML layouts. Not only does it handle interacting with
+the `ImageManager`, it also waits until it's been measured (which isn't immediately when your app starts) and loads images
 to fit its own dimensions.
+
+To implement the `AImageView` your your XML layout, just replace `ImageView' with `com.afollestad.aimage.views.AImageView`,
+then use code like this:
 
 ```java
 ImageManager manager = new ImageManager(this);
