@@ -3,6 +3,7 @@ package com.afollestad.aimage;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -21,7 +22,7 @@ import java.util.concurrent.*;
 /**
  * <p>The most important class in the AImage library; downloads images, and handles caching them on the disk and in memory
  * so they can quickly be retrieved. Also allows you to download images to fit a certain width and height.</p>
- *
+ * <p/>
  * <p>If you're using AImage for displaying images in your UI, see {@link com.afollestad.aimage.views.AImageView} and
  * {@link com.afollestad.aimage.views.AspectAImageView} for easy-to-use options.</p>
  */
@@ -63,8 +64,9 @@ public class ImageManager {
 
     /**
      * Gets an image from a URI on the calling thread and returns the result.
+     *
      * @param source The URI to get the image from.
-     * @param dimen The optional target dimensions that the image will be resized to.
+     * @param dimen  The optional target dimensions that the image will be resized to.
      */
     public Bitmap get(String source, Dimension dimen) {
         if (source == null) {
@@ -78,8 +80,8 @@ public class ImageManager {
             Log.i("ImageManager", "Got " + source + " from the memory cache.");
         }
         if (bitmap == null) {
-            bitmap = getBitmapFromNetwork(key, source, dimen);
-            Log.i("ImageManager", "Got " + source + " from the network.");
+            bitmap = getBitmapFromExternal(key, source, dimen);
+            Log.i("ImageManager", "Got " + source + " from the external source.");
         } else {
             Log.i("ImageManager", "Got " + source + " from the disk cache.");
         }
@@ -88,8 +90,9 @@ public class ImageManager {
 
     /**
      * Gets an image from a URI on a separate thread and posts the results to a callback.
-     * @param source The URI to get the image from.
-     * @param dimen The optional target dimensions that the image will be resized to.
+     *
+     * @param source   The URI to get the image from.
+     * @param dimen    The optional target dimensions that the image will be resized to.
      * @param callback The callback that the result will be posted to.
      */
     public void get(final String source, final Dimension dimen, final ImageListener callback) {
@@ -114,7 +117,7 @@ public class ImageManager {
                         mHandler.post(new Runnable() {
                             @Override
                             public void run() {
-                                if(callback != null)
+                                if (callback != null)
                                     callback.onImageReceived(source, bitmap);
                             }
                         });
@@ -123,12 +126,12 @@ public class ImageManager {
 
                             @Override
                             public void run() {
-                                final Bitmap bitmap = getBitmapFromNetwork(key, source, dimen);
+                                final Bitmap bitmap = getBitmapFromExternal(key, source, dimen);
                                 mHandler.post(new Runnable() {
                                     @Override
                                     public void run() {
                                         Log.i("ImageManager", "Got " + source + " from the network.");
-                                        if(callback != null)
+                                        if (callback != null)
                                             callback.onImageReceived(source, bitmap);
                                     }
                                 });
@@ -139,7 +142,6 @@ public class ImageManager {
             });
         }
     }
-
 
     private Bitmap getBitmapFromDisk(String key) {
         Bitmap bitmap = null;
@@ -159,7 +161,7 @@ public class ImageManager {
         return bitmap;
     }
 
-    private Bitmap getBitmapFromNetwork(String key, String source, Dimension dimen) {
+    private Bitmap getBitmapFromExternal(String key, String source, Dimension dimen) {
         byte[] byteArray = copyURLToByteArray(source);
         if (byteArray != null) {
             Bitmap bitmap = decodeByteArray(byteArray, dimen);
@@ -177,9 +179,12 @@ public class ImageManager {
         InputStream inputStream = null;
         ByteArrayOutputStream byteArrayOutputStream = null;
         try {
-            inputStream = new URL(source).openConnection().getInputStream();
+            if (source.startsWith("content")) {
+                inputStream = context.getContentResolver().openInputStream(Uri.parse(source));
+            } else {
+                inputStream = new URL(source).openConnection().getInputStream();
+            }
             byteArrayOutputStream = new ByteArrayOutputStream();
-
             IOUtils.copy(inputStream, byteArrayOutputStream);
             return byteArrayOutputStream.toByteArray();
         } catch (Exception e) {
