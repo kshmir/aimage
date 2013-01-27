@@ -23,16 +23,18 @@ public class AImageView extends ImageView {
     public AImageView(Context context) {
         super(context);
     }
+
     public AImageView(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
+
     public AImageView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
     }
 
 
     @Override
-    protected void onSizeChanged (int w, int h, int oldw, int oldh) {
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         /**
          * This method allows the view to wait until it has been measured (a view won't be measured until
          * right before it becomes visible, which is usually after your code first starts executing. This
@@ -44,7 +46,7 @@ public class AImageView extends ImageView {
     }
 
     public void setAImageSource(ImageManager aimage, String source) {
-        if(aimage == null || source == null) {
+        if (aimage == null || source == null) {
             return;
         }
         this.aimage = aimage;
@@ -53,9 +55,9 @@ public class AImageView extends ImageView {
     }
 
     private void loadFromSource() {
-        if(aimage == null || source == null) {
+        if (aimage == null || source == null) {
             return;
-        } else if(getMeasuredWidth() == 0 && getMeasuredHeight() == 0) {
+        } else if (getMeasuredWidth() == 0 && getMeasuredHeight() == 0) {
             Log.i("AImageView", "View not measured yet, waiting...");
             // Wait until the view's width and height are measured
             return;
@@ -63,17 +65,12 @@ public class AImageView extends ImageView {
         aimage.get(this.source, new Dimension(getMeasuredWidth(), getMeasuredHeight()), new ImageListener() {
             @Override
             public void onImageReceived(final String source, final Bitmap bitmap) {
-                aimage.getHandler().post(new Runnable() {
-                    @Override
-                    public void run() {
-                        setImageBitmap(bitmap);
-                        if(invalidateOnLoad) {
-                            requestLayout();
-                            invalidate();
-                        }
-                        Log.i("AImageView", source + " set to view.");
-                    }
-                });
+                setImageBitmap(bitmap);
+                if (invalidateOnLoad) {
+                    requestLayout();
+                    invalidate();
+                }
+                Log.i("AImageView", source + " set to view.");
             }
         });
     }

@@ -61,11 +61,6 @@ public class ImageManager {
         return DigestUtils.sha256Hex(source);
     }
 
-    public Handler getHandler() {
-        return mHandler;
-    }
-
-
     /**
      * Gets an image from a URI on the calling thread and returns the result.
      * @param source The URI to get the image from.
