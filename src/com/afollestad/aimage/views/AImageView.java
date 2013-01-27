@@ -41,7 +41,8 @@ public class AImageView extends ImageView {
          * insures that correct dimensions will be used for the image loading size to optimize memory.
          */
         super.onSizeChanged(w, h, oldw, oldh);
-        Log.i("AImageView", "onSizeChanged -- " + w + ":" + h);
+        if(aimage.isDebugEnabled())
+            Log.i("AImageView", "onSizeChanged -- " + w + ":" + h);
         loadFromSource();
     }
 
@@ -60,7 +61,8 @@ public class AImageView extends ImageView {
         if (aimage == null || source == null) {
             return;
         } else if (getMeasuredWidth() == 0 && getMeasuredHeight() == 0) {
-            Log.i("AImageView", "View not measured yet, waiting...");
+            if(aimage.isDebugEnabled())
+                Log.i("AImageView", "View not measured yet, waiting...");
             // Wait until the view's width and height are measured
             return;
         }
@@ -69,7 +71,8 @@ public class AImageView extends ImageView {
             @Override
             public void onImageReceived(final String source, final Bitmap bitmap) {
                 if(lastSource != null && !lastSource.equals(source)) {
-                    Log.i("AImageView", "View source changed since download started, not setting " + source + " to view.");
+                    if(aimage.isDebugEnabled())
+                        Log.i("AImageView", "View source changed since download started, not setting " + source + " to view.");
                     return;
                 }
                 setImageBitmap(bitmap);
@@ -77,7 +80,8 @@ public class AImageView extends ImageView {
                     requestLayout();
                     invalidate();
                 }
-                Log.i("AImageView", source + " set to view.");
+                if(aimage.isDebugEnabled())
+                    Log.i("AImageView", source + " set to view.");
             }
         });
     }

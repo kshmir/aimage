@@ -39,6 +39,7 @@ public class ImageManager {
         mDiskLruCache = openDiskCache();
     }
 
+    private boolean debug;
     private Context context;
     private static final Object[] LOCK = new Object[0];
     private DiskLruCache mDiskLruCache;
@@ -50,6 +51,21 @@ public class ImageManager {
     protected static final int MEM_CACHE_SIZE_KB = (int) (Runtime.getRuntime().maxMemory() / 2 / 1024);
     protected static final int DISK_CACHE_SIZE_KB = (10 * 1024);
     protected static final int ASYNC_THREAD_COUNT = (Runtime.getRuntime().availableProcessors() * 4);
+
+
+    public void setDebugEnabled(boolean enabled) {
+        debug = enabled;
+    }
+
+    public boolean isDebugEnabled() {
+        return debug;
+    }
+
+    protected void log(String message) {
+        if(!debug)
+            return;
+        Log.i("AImage.ImageManager", message);
+    }
 
 
     private static String getKey(String source, Dimension dimen) {
@@ -77,13 +93,13 @@ public class ImageManager {
         if (bitmap == null) {
             bitmap = getBitmapFromDisk(key);
         } else {
-            Log.i("ImageManager", "Got " + source + " from the memory cache.");
+            log("Got " + source + " from the memory cache.");
         }
         if (bitmap == null) {
             bitmap = getBitmapFromExternal(key, source, dimen);
-            Log.i("ImageManager", "Got " + source + " from the external source.");
+            log("Got " + source + " from the external source.");
         } else {
-            Log.i("ImageManager", "Got " + source + " from the disk cache.");
+            log("Got " + source + " from the disk cache.");
         }
         return bitmap;
     }
@@ -104,16 +120,15 @@ public class ImageManager {
         final String key = getKey(source, dimen);
         Bitmap bitmap = mLruCache.get(key);
         if (bitmap != null && callback != null) {
-            Log.i("ImageManager", "Got " + source + " from the memory cache.");
+            log("Got " + source + " from the memory cache.");
             callback.onImageReceived(source, bitmap);
         } else {
             mDiskExecutorService.execute(new Runnable() {
                 @Override
                 public void run() {
-                    //TODO ? if (verifySourceOverTime(source, request)) {
                     final Bitmap bitmap = getBitmapFromDisk(key);
                     if (bitmap != null) {
-                        Log.i("ImageManager", "Got " + source + " from the disk cache.");
+                        log("Got " + source + " from the disk cache.");
                         mHandler.post(new Runnable() {
                             @Override
                             public void run() {
@@ -130,7 +145,7 @@ public class ImageManager {
                                 mHandler.post(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Log.i("ImageManager", "Got " + source + " from external source.");
+                                        log("Got " + source + " from external source.");
                                         if (callback != null)
                                             callback.onImageReceived(source, bitmap);
                                     }
