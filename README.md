@@ -72,7 +72,10 @@ Again, if you want to down sample the image, you can pass an instance of the `Di
 
 Using the library is even easier when you use the `AImageView` in your XML layouts. Not only does it handle interacting with
 the `ImageManager`, it also waits until it's been measured (which isn't immediately when your app starts) and loads images
-to fit its own dimensions.
+to fit its own dimensions. The `AImageView` takes precautions so that it doesn't download and display the wrong image when you're
+scrolling quickly in a ListView (which is a common problem for people that have their own image management implementations on Android).
+This problem is caused by views being recycled and re-used, the library automatically handles cancelling previous download threads
+and making sure the right image is shown when the threads are done working.
 
 To implement the `AImageView` in your XML layout, just replace `ImageView` with `com.afollestad.aimage.views.AImageView`,
 then use code like what's shown below. Again, it's recommend that you only initialize the `ImageManager` once and use the
