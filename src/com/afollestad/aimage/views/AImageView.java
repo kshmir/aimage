@@ -18,6 +18,7 @@ public class AImageView extends ImageView {
 
     private String source;
     private ImageManager aimage;
+    protected boolean invalidateOnLoad;
 
     public AImageView(Context context) {
         super(context);
@@ -25,6 +26,10 @@ public class AImageView extends ImageView {
     public AImageView(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
+    public AImageView(Context context, AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
+    }
+
 
     @Override
     protected void onSizeChanged (int w, int h, int oldw, int oldh) {
@@ -62,6 +67,10 @@ public class AImageView extends ImageView {
                     @Override
                     public void run() {
                         setImageBitmap(bitmap);
+                        if(invalidateOnLoad) {
+                            requestLayout();
+                            invalidate();
+                        }
                         Log.i("AImageView", source + " set to view.");
                     }
                 });

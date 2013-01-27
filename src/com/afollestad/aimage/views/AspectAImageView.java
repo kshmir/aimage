@@ -12,9 +12,15 @@ public class AspectAImageView extends AImageView {
 
     public AspectAImageView(Context context) {
         super(context);
+        super.invalidateOnLoad = true;
     }
     public AspectAImageView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        super.invalidateOnLoad = true;
+    }
+    public AspectAImageView(Context context, AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
+        super.invalidateOnLoad = true;
     }
 
     @Override
