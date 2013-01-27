@@ -62,9 +62,14 @@ public class AImageView extends ImageView {
             // Wait until the view's width and height are measured
             return;
         }
+        setTag(source);
         aimage.get(this.source, new Dimension(getMeasuredWidth(), getMeasuredHeight()), new ImageListener() {
             @Override
             public void onImageReceived(final String source, final Bitmap bitmap) {
+                if(getTag() != null && !getTag().equals(source)) {
+                    Log.i("AImageView", "View tag changed, not setting " + source + " to view.");
+                    return;
+                }
                 setImageBitmap(bitmap);
                 if (invalidateOnLoad) {
                     requestLayout();
