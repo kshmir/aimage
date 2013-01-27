@@ -130,7 +130,7 @@ public class ImageManager {
                                 mHandler.post(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Log.i("ImageManager", "Got " + source + " from the network.");
+                                        Log.i("ImageManager", "Got " + source + " from external source.");
                                         if (callback != null)
                                             callback.onImageReceived(source, bitmap);
                                     }
