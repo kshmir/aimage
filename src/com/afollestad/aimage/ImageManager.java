@@ -203,7 +203,6 @@ public class ImageManager {
             IOUtils.copy(inputStream, byteArrayOutputStream);
             return byteArrayOutputStream.toByteArray();
         } catch (Exception e) {
-            e.printStackTrace();
         } finally {
             IOUtils.closeQuietly(inputStream);
             IOUtils.closeQuietly(byteArrayOutputStream);

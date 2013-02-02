@@ -88,7 +88,9 @@ fresh memory cache (the disk cache stays, however).
 ImageManager manager = new ImageManager(this);
 //Replace the view ID with whatever ID you're using in your XML layout
 AImageView aview = (AImageView)findViewById(R.id.image);
-aview.setAImageSource(manager, "http://www.android.com/images/whatsnew/jb-new-logo.png");
+aview.setManager(manager)
+     .setSource("http://www.android.com/images/whatsnew/jb-new-logo.png")
+     .load();
 ````
 
 ### AspectAImageView

@@ -46,19 +46,30 @@ public class AImageView extends ImageView {
         loadFromSource();
     }
 
-    public void setAImageSource(ImageManager aimage, String source) {
-        if (aimage == null || source == null) {
-            return;
+
+    public AImageView setManager(ImageManager manager) {
+        if(manager == null) {
+            throw new IllegalArgumentException("The ImageManager cannot be null.");
         }
-        this.aimage = aimage;
+        this.aimage = manager;
+        return this;
+    }
+
+    public AImageView setSource(String source) {
         this.source = source;
+        return this;
+    }
+
+    public void load() {
         loadFromSource();
     }
+
 
     protected String lastSource;
 
     private void loadFromSource() {
         if (aimage == null || source == null) {
+            setImageBitmap(null);
             return;
         } else if (getMeasuredWidth() == 0 && getMeasuredHeight() == 0) {
             if(aimage.isDebugEnabled())
