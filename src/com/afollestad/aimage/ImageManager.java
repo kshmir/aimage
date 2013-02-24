@@ -51,29 +51,12 @@ public class ImageManager {
     protected static final int MEM_CACHE_SIZE_KB = (int) (Runtime.getRuntime().maxMemory() / 2 / 1024);
     protected static final int ASYNC_THREAD_COUNT = (Runtime.getRuntime().availableProcessors() * 4);
 
-    private int SCROLL_STATE = AbsListView.OnScrollListener.SCROLL_STATE_IDLE;
-
 
     /**
      * Disabled by default. If enabled, log messages will be printed to the logcat.
      */
     public void setDebugEnabled(boolean enabled) {
         debug = enabled;
-    }
-
-    public void setHookedListView(ListView list) {
-        if(list == null) {
-            SCROLL_STATE = AbsListView.OnScrollListener.SCROLL_STATE_IDLE;
-            return;
-        }
-        list.setOnScrollListener(new AbsListView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(AbsListView absListView, int state) {
-                SCROLL_STATE = state;
-            }
-            @Override
-            public void onScroll(AbsListView absListView, int i, int i2, int i3) { }
-        });
     }
 
     public boolean isDebugEnabled() {
@@ -106,8 +89,6 @@ public class ImageManager {
     public Bitmap get(String source, Dimension dimen) {
         if (source == null) {
             return null;
-        } else if(SCROLL_STATE == AbsListView.OnScrollListener.SCROLL_STATE_FLING) {
-            return null;
         }
         String key = getKey(source, dimen);
         Bitmap bitmap = mLruCache.get(key);
@@ -136,8 +117,6 @@ public class ImageManager {
         if (!Looper.getMainLooper().equals(Looper.myLooper())) {
             throw new RuntimeException("This must only be executed on the main UI Thread!");
         } else if (source == null) {
-            return;
-        } else if(SCROLL_STATE == AbsListView.OnScrollListener.SCROLL_STATE_FLING) {
             return;
         }
         final String key = getKey(source, dimen);
