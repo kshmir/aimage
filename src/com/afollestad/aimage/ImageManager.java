@@ -8,14 +8,14 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.util.LruCache;
+import android.widget.AbsListView;
+import android.widget.ListView;
 import com.afollestad.aimage.cache.DigestUtils;
-import com.afollestad.aimage.cache.DiskLruCache;
+import com.afollestad.aimage.cache.DiskCache;
 import com.afollestad.aimage.cache.IOUtils;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URL;
 import java.util.concurrent.*;
 
@@ -36,25 +36,44 @@ public class ImageManager {
                 return value.getRowBytes() * value.getHeight();
             }
         };
-        mDiskLruCache = openDiskCache();
+        mDiskCache = new DiskCache(context);
     }
 
     private boolean debug;
     private Context context;
     private static final Object[] LOCK = new Object[0];
-    private DiskLruCache mDiskLruCache;
+    private DiskCache mDiskCache;
     private Handler mHandler = new Handler(Looper.getMainLooper());
     private LruCache<String, Bitmap> mLruCache = newConfiguredLruCache();
     private ExecutorService mNetworkExecutorService = newConfiguredThreadPool();
     private ExecutorService mDiskExecutorService = Executors.newCachedThreadPool(new LowPriorityThreadFactory());
 
     protected static final int MEM_CACHE_SIZE_KB = (int) (Runtime.getRuntime().maxMemory() / 2 / 1024);
-    protected static final int DISK_CACHE_SIZE_KB = (10 * 1024);
     protected static final int ASYNC_THREAD_COUNT = (Runtime.getRuntime().availableProcessors() * 4);
 
+    private int SCROLL_STATE = AbsListView.OnScrollListener.SCROLL_STATE_IDLE;
 
+
+    /**
+     * Disabled by default. If enabled, log messages will be printed to the logcat.
+     */
     public void setDebugEnabled(boolean enabled) {
         debug = enabled;
+    }
+
+    public void setHookedListView(ListView list) {
+        if(list == null) {
+            SCROLL_STATE = AbsListView.OnScrollListener.SCROLL_STATE_IDLE;
+            return;
+        }
+        list.setOnScrollListener(new AbsListView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(AbsListView absListView, int state) {
+                SCROLL_STATE = state;
+            }
+            @Override
+            public void onScroll(AbsListView absListView, int i, int i2, int i3) { }
+        });
     }
 
     public boolean isDebugEnabled() {
@@ -62,7 +81,7 @@ public class ImageManager {
     }
 
     protected void log(String message) {
-        if(!debug)
+        if (!debug)
             return;
         Log.i("AImage.ImageManager", message);
     }
@@ -86,6 +105,8 @@ public class ImageManager {
      */
     public Bitmap get(String source, Dimension dimen) {
         if (source == null) {
+            return null;
+        } else if(SCROLL_STATE == AbsListView.OnScrollListener.SCROLL_STATE_FLING) {
             return null;
         }
         String key = getKey(source, dimen);
@@ -115,6 +136,8 @@ public class ImageManager {
         if (!Looper.getMainLooper().equals(Looper.myLooper())) {
             throw new RuntimeException("This must only be executed on the main UI Thread!");
         } else if (source == null) {
+            return;
+        } else if(SCROLL_STATE == AbsListView.OnScrollListener.SCROLL_STATE_FLING) {
             return;
         }
         final String key = getKey(source, dimen);
@@ -160,18 +183,13 @@ public class ImageManager {
 
     private Bitmap getBitmapFromDisk(String key) {
         Bitmap bitmap = null;
-        DiskLruCache.Snapshot snapshot = null;
         try {
-            snapshot = mDiskLruCache.get(key);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (snapshot != null) {
-                bitmap = decodeFromSnapshot(snapshot);
-                if (bitmap != null) {
-                    mLruCache.put(key, bitmap);
-                }
+            bitmap = mDiskCache.get(key);
+            if (bitmap != null) {
+                mLruCache.put(key, bitmap);
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return bitmap;
     }
@@ -181,7 +199,11 @@ public class ImageManager {
         if (byteArray != null) {
             Bitmap bitmap = decodeByteArray(byteArray, dimen);
             if (bitmap != null) {
-                copyBitmapToDiskLruCache(key, bitmap);
+                try {
+                    mDiskCache.put(key, bitmap);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
                 mLruCache.put(key, bitmap);
                 return bitmap;
             }
@@ -203,6 +225,7 @@ public class ImageManager {
             IOUtils.copy(inputStream, byteArrayOutputStream);
             return byteArrayOutputStream.toByteArray();
         } catch (Exception e) {
+            e.printStackTrace();
         } finally {
             IOUtils.closeQuietly(inputStream);
             IOUtils.closeQuietly(byteArrayOutputStream);
@@ -243,46 +266,6 @@ public class ImageManager {
         return null;
     }
 
-    private void copyBitmapToDiskLruCache(String key, Bitmap bitmap) {
-        DiskLruCache.Editor editor = null;
-        OutputStream outputStream = null;
-        try {
-            synchronized (LOCK) {
-                if (!context.getExternalCacheDir().exists()) {
-                    /*
-                     * We are in an unexpected state, our cache directory was
-                     * destroyed without our static instance being destroyed
-                     * also. The best thing we can do here is start over.
-                     */
-                    mDiskLruCache = openDiskCache();
-                }
-            }
-
-            /*
-             * We block here because Editor.edit will return null if another
-             * edit is in progress
-             */
-            while (editor == null) {
-                editor = mDiskLruCache.edit(key);
-                Thread.sleep(50);
-            }
-
-            outputStream = editor.newOutputStream(0);
-            bitmap.compress(Bitmap.CompressFormat.PNG, 0, outputStream);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            IOUtils.closeQuietly(outputStream);
-            if (editor != null) {
-                try {
-                    editor.commit();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
     private static BitmapFactory.Options getBitmapFactoryOptions() {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inPurgeable = true;
@@ -291,24 +274,7 @@ public class ImageManager {
         return options;
     }
 
-    private static Bitmap decodeFromSnapshot(DiskLruCache.Snapshot snapshot) {
-        InputStream inputStream = null;
-        try {
-            inputStream = snapshot.getInputStream(0);
-            synchronized (LOCK) {
-                return BitmapFactory.decodeStream(inputStream, null, getBitmapFactoryOptions());
-            }
-        } catch (Throwable t) {
-            t.printStackTrace();
-        } finally {
-            IOUtils.closeQuietly(inputStream);
-            IOUtils.closeQuietly(snapshot);
-        }
-        return null;
-    }
-
-
-    public static ExecutorService newConfiguredThreadPool() {
+    private static ExecutorService newConfiguredThreadPool() {
         int corePoolSize = 0;
         int maximumPoolSize = ASYNC_THREAD_COUNT;
         long keepAliveTime = 60L;
@@ -325,13 +291,5 @@ public class ImageManager {
                 return value.getRowBytes() * value.getHeight();
             }
         };
-    }
-
-    private DiskLruCache openDiskCache() {
-        try {
-            return DiskLruCache.open(context.getExternalCacheDir(), 1, 1, DISK_CACHE_SIZE_KB * 1024);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 }
