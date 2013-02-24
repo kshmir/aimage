@@ -8,8 +8,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.util.LruCache;
-import android.widget.AbsListView;
-import android.widget.ListView;
 import com.afollestad.aimage.cache.DigestUtils;
 import com.afollestad.aimage.cache.DiskCache;
 import com.afollestad.aimage.cache.IOUtils;
