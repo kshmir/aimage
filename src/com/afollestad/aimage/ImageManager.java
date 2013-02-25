@@ -13,6 +13,8 @@ import com.afollestad.aimage.cache.DiskCache;
 import com.afollestad.aimage.cache.IOUtils;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.concurrent.*;
@@ -195,6 +197,9 @@ public class ImageManager {
         try {
             if (source.startsWith("content")) {
                 inputStream = context.getContentResolver().openInputStream(Uri.parse(source));
+            } else if(source.startsWith("file")) {
+            	Uri uri = Uri.parse(source);
+            	inputStream = new FileInputStream(new File(uri.getPath()));
             } else {
                 inputStream = new URL(source).openConnection().getInputStream();
             }
