@@ -53,7 +53,7 @@ public class ImageManager {
     private ExecutorService mDiskExecutorService = Executors.newCachedThreadPool(new LowPriorityThreadFactory());
 
     protected static final int MEM_CACHE_SIZE_KB = (int) (Runtime.getRuntime().maxMemory() / 2 / 1024);
-    protected static final int ASYNC_THREAD_COUNT = (Runtime.getRuntime().availableProcessors() * 4);
+    protected static final int ASYNC_THREAD_COUNT = (Runtime.getRuntime().availableProcessors() * 6);
 
 
     /**
@@ -74,12 +74,9 @@ public class ImageManager {
     }
 
 
-    private static String getKey(String source, Dimension dimen) {
+    private static String getKey(String source) {
         if (source == null) {
             return null;
-        }
-        if (dimen != null && dimen.getWidth() > 0 && dimen.getHeight() > 0) {
-            source += dimen.toString();
         }
         return DigestUtils.sha256Hex(source);
     }
@@ -94,7 +91,7 @@ public class ImageManager {
         if (source == null) {
             return null;
         }
-        String key = getKey(source, dimen);
+        String key = getKey(source);
         Bitmap bitmap = mLruCache.get(key);
         if (bitmap == null) {
             bitmap = getBitmapFromDisk(key);
@@ -123,7 +120,7 @@ public class ImageManager {
         } else if (source == null) {
             return;
         }
-        final String key = getKey(source, dimen);
+        final String key = getKey(source);
         Bitmap bitmap = mLruCache.get(key);
         if (bitmap != null && callback != null) {
             log("Got " + source + " from the memory cache.");
