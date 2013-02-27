@@ -45,7 +45,6 @@ public class ImageManager {
 
     private boolean debug;
     private Context context;
-    private static final Object[] LOCK = new Object[0];
     private DiskCache mDiskCache;
     private Handler mHandler = new Handler(Looper.getMainLooper());
     private LruCache<String, Bitmap> mLruCache = newConfiguredLruCache();
@@ -87,7 +86,7 @@ public class ImageManager {
      * @param source The URI to get the image from.
      * @param dimen  The optional target dimensions that the image will be resized to.
      */
-    public Bitmap get(String source, Dimension dimen) {
+    public Bitmap get(String source) {
         if (source == null) {
             return null;
         }
@@ -99,7 +98,7 @@ public class ImageManager {
             log("Got " + source + " from the memory cache.");
         }
         if (bitmap == null) {
-            bitmap = getBitmapFromExternal(key, source, dimen);
+            bitmap = getBitmapFromExternal(key, source);
             log("Got " + source + " from the external source.");
         } else {
             log("Got " + source + " from the disk cache.");
@@ -114,7 +113,7 @@ public class ImageManager {
      * @param dimen    The optional target dimensions that the image will be resized to.
      * @param callback The callback that the result will be posted to.
      */
-    public void get(final String source, final Dimension dimen, final ImageListener callback) {
+    public void get(final String source, final ImageListener callback) {
         if (!Looper.getMainLooper().equals(Looper.myLooper())) {
             throw new RuntimeException("This must only be executed on the main UI Thread!");
         } else if (source == null) {
@@ -144,7 +143,7 @@ public class ImageManager {
 
                             @Override
                             public void run() {
-                                final Bitmap bitmap = getBitmapFromExternal(key, source, dimen);
+                                final Bitmap bitmap = getBitmapFromExternal(key, source);
                                 mHandler.post(new Runnable() {
                                     @Override
                                     public void run() {
@@ -174,10 +173,10 @@ public class ImageManager {
         return bitmap;
     }
 
-    private Bitmap getBitmapFromExternal(String key, String source, Dimension dimen) {
+    private Bitmap getBitmapFromExternal(String key, String source) {
         byte[] byteArray = copyURLToByteArray(source);
         if (byteArray != null) {
-            Bitmap bitmap = decodeByteArray(byteArray, dimen);
+            Bitmap bitmap = decodeByteArray(byteArray);
             if (bitmap != null) {
                 try {
                     mDiskCache.put(key, bitmap);
@@ -216,33 +215,10 @@ public class ImageManager {
         return null;
     }
 
-    private static Bitmap decodeByteArray(byte[] byteArray, Dimension dimen) {
+    private static Bitmap decodeByteArray(byte[] byteArray) {
         try {
-            Bitmap bitmap;
             BitmapFactory.Options bitmapFactoryOptions = getBitmapFactoryOptions();
-
-            synchronized (LOCK) {
-                if (dimen != null && !dimen.isZero()) {
-                    bitmapFactoryOptions.inJustDecodeBounds = true;
-                    BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length, bitmapFactoryOptions);
-
-                    int heightRatio = (int) Math.ceil(bitmapFactoryOptions.outHeight / (float) dimen.getHeight());
-                    int widthRatio = (int) Math.ceil(bitmapFactoryOptions.outWidth / (float) dimen.getWidth());
-
-                    if (heightRatio > 1 || widthRatio > 1) {
-                        if (heightRatio > widthRatio) {
-                            bitmapFactoryOptions.inSampleSize = heightRatio;
-                        } else {
-                            bitmapFactoryOptions.inSampleSize = widthRatio;
-                        }
-                    }
-                    bitmapFactoryOptions.inJustDecodeBounds = false;
-                }
-
-                bitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length, bitmapFactoryOptions);
-            }
-
-            return bitmap;
+            return BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length, bitmapFactoryOptions);
         } catch (Throwable t) {
             t.printStackTrace();
         }

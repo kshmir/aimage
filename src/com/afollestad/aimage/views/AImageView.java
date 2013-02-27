@@ -5,15 +5,9 @@ import android.graphics.Bitmap;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.widget.ImageView;
-import com.afollestad.aimage.Dimension;
 import com.afollestad.aimage.ImageListener;
 import com.afollestad.aimage.ImageManager;
 
-/**
- * An {@link ImageView} that wraps around the {@link ImageManager} class to asynchronously load images on a separate thread
- * and load them into the view with the associated width and height. The view waits until it's measured so the
- * real measured width and height are used when loading the image to size.
- */
 public class AImageView extends ImageView {
 
     private String source;
@@ -78,7 +72,7 @@ public class AImageView extends ImageView {
             return;
         }
         lastSource = source;
-        aimage.get(this.source, new Dimension(getMeasuredWidth(), getMeasuredHeight()), new ImageListener() {
+        aimage.get(this.source, new ImageListener() {
             @Override
             public void onImageReceived(final String source, final Bitmap bitmap) {
                 if(lastSource != null && !lastSource.equals(source)) {
