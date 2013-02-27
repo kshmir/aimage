@@ -38,6 +38,10 @@ public class ImageManager {
         };
         mDiskCache = new DiskCache(context);
     }
+    public ImageManager(Context context, File cacheDir) {
+        this(context);
+        mDiskCache.setCacheDirectory(cacheDir);
+    }
 
     private boolean debug;
     private Context context;
