@@ -52,7 +52,7 @@ public class ImageManager {
     private ExecutorService mDiskExecutorService = Executors.newCachedThreadPool(new LowPriorityThreadFactory());
 
     protected static final int MEM_CACHE_SIZE_KB = (int) (Runtime.getRuntime().maxMemory() / 2 / 1024);
-    protected static final int ASYNC_THREAD_COUNT = (Runtime.getRuntime().availableProcessors() * 6);
+    protected static final int ASYNC_THREAD_COUNT = (Runtime.getRuntime().availableProcessors() * 4);
 
 
     /**
