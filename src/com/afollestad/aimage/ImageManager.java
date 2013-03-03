@@ -34,13 +34,6 @@ public class ImageManager {
             }
         };
         mDiskCache = new DiskCache(context);
-
-        ImageManager manager = new ImageManager(context);
-        manager.setCacheDirectory(context.getExternalCacheDir());  // This is the default cache directory
-
-        manager.setCacheDirectory(new File(Environment.getExternalStorageDirectory(), "My Directory"));
-
-        //manager.setFallbackImage(R.drawable.fallback_image);  // Replace with a drawable resource ID of your choice
     }
 
 
