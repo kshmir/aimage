@@ -125,13 +125,20 @@ public class AImageView extends ImageView {
                         Log.i("AImageView", "View source changed since download started, not setting " + source + " to view.");
                     return;
                 }
-                setImageBitmap(bitmap);
-                if (invalidateOnLoad) {
-                    requestLayout();
-                    invalidate();
-                }
-                if(aimage.isDebugEnabled())
-                    Log.i("AImageView", source + " set to view.");
+
+                // Post on the view's UI thread to be 100% sure we're on the right thread
+                AImageView.this.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        setImageBitmap(bitmap);
+                        if (invalidateOnLoad) {
+                            requestLayout();
+                            invalidate();
+                        }
+                        if(aimage.isDebugEnabled())
+                            Log.i("AImageView", source + " set to view.");
+                    }
+                });
             }
         }, this.fitView ? new Dimension(this) : null);
     }
