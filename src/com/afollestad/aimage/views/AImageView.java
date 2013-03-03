@@ -77,10 +77,17 @@ public class AImageView extends ImageView {
      * Loads an image into the view, using the ImageManager set via #setManager and the source set via #setSource.
      */
     public void load() {
+        if(aimage == null)
+            throw new IllegalStateException("You cannot call load() on the AImageView until you have set a ImageManager via setManager().");
         loadFromSource();
     }
 
+    /**
+     * Loads the fallback image set from the {@link ImageManager} set via #setManager.
+     */
     public void showFallback() {
+        if(aimage == null)
+            throw new IllegalStateException("You cannot load the fallback image until you have set a ImageManager via setManager().");
         aimage.get(ImageManager.SOURCE_FALLBACK, new ImageListener() {
             @Override
             public void onImageReceived(final String source, final Bitmap bitmap) {
@@ -97,11 +104,10 @@ public class AImageView extends ImageView {
 
 
     private void loadFromSource() {
-        if(source == null || source.trim().isEmpty()) {
-            if(aimage != null)
-                showFallback();
+        if (aimage == null) {
             return;
-        } else if (aimage == null) {
+        } else if(source == null || source.trim().isEmpty()) {
+            showFallback();
             return;
         } else if (getMeasuredWidth() == 0 && getMeasuredHeight() == 0) {
             if(aimage.isDebugEnabled())
@@ -109,6 +115,7 @@ public class AImageView extends ImageView {
             // Wait until the view's width and height are measured
             return;
         }
+
         lastSource = source;
         aimage.get(this.source, new ImageListener() {
             @Override
