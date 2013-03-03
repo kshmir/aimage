@@ -2,7 +2,8 @@ package com.afollestad.aimage;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
@@ -38,11 +39,14 @@ public class ImageManager {
         };
         mDiskCache = new DiskCache(context);
     }
-    public ImageManager(Context context, File cacheDir) {
+    public ImageManager(Context context, File cacheDir, int fallbackId) {
         this(context);
-        mDiskCache.setCacheDirectory(cacheDir);
+        if(cacheDir != null)
+            mDiskCache.setCacheDirectory(cacheDir);
+        this.fallbackImageId = fallbackId;
     }
 
+    private int fallbackImageId;
     private boolean debug;
     private Context context;
     private DiskCache mDiskCache;
@@ -66,6 +70,34 @@ public class ImageManager {
         return debug;
     }
 
+    /**
+     * Checks for an internet connection.
+     */
+    public boolean isOnline() {
+        if(context == null) {
+            return false;
+        }
+        boolean state = false;
+        ConnectivityManager cm = (ConnectivityManager) context
+                .getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        NetworkInfo wifiNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        if (wifiNetwork != null) {
+            state = wifiNetwork.isConnectedOrConnecting();
+        }
+
+        NetworkInfo mobileNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+        if (mobileNetwork != null) {
+            state = mobileNetwork.isConnectedOrConnecting();
+        }
+
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        if (activeNetwork != null) {
+            state = activeNetwork.isConnectedOrConnecting();
+        }
+        return state;
+    }
+
     protected void log(String message) {
         if (!debug)
             return;
@@ -73,24 +105,29 @@ public class ImageManager {
     }
 
 
-    private static String getKey(String source) {
+    private static String getKey(String source, Dimension dimension) {
         if (source == null) {
             return null;
         }
+        if(dimension != null)
+            source += "_" + dimension.toString();
         return DigestUtils.sha256Hex(source);
+    }
+
+    public Bitmap getFallbackImage(Dimension dimension) {
+        context.getResources().openRawResource(fallbackImageId);
     }
 
     /**
      * Gets an image from a URI on the calling thread and returns the result.
      *
      * @param source The URI to get the image from.
-     * @param dimen  The optional target dimensions that the image will be resized to.
      */
-    public Bitmap get(String source) {
+    public Bitmap get(String source, Dimension dimension) {
         if (source == null) {
             return null;
         }
-        String key = getKey(source);
+        String key = getKey(source, dimension);
         Bitmap bitmap = mLruCache.get(key);
         if (bitmap == null) {
             bitmap = getBitmapFromDisk(key);
@@ -98,7 +135,7 @@ public class ImageManager {
             log("Got " + source + " from the memory cache.");
         }
         if (bitmap == null) {
-            bitmap = getBitmapFromExternal(key, source);
+            bitmap = getBitmapFromExternal(key, source, dimension);
             log("Got " + source + " from the external source.");
         } else {
             log("Got " + source + " from the disk cache.");
@@ -110,16 +147,15 @@ public class ImageManager {
      * Gets an image from a URI on a separate thread and posts the results to a callback.
      *
      * @param source   The URI to get the image from.
-     * @param dimen    The optional target dimensions that the image will be resized to.
      * @param callback The callback that the result will be posted to.
      */
-    public void get(final String source, final ImageListener callback) {
+    public void get(final String source, final ImageListener callback, final Dimension dimension) {
         if (!Looper.getMainLooper().equals(Looper.myLooper())) {
             throw new RuntimeException("This must only be executed on the main UI Thread!");
         } else if (source == null) {
             return;
         }
-        final String key = getKey(source);
+        final String key = getKey(source, dimension);
         Bitmap bitmap = mLruCache.get(key);
         if (bitmap != null && callback != null) {
             log("Got " + source + " from the memory cache.");
@@ -139,11 +175,17 @@ public class ImageManager {
                             }
                         });
                     } else {
+                        if(!isOnline()) {
+                            log("Device is offline, returning fallback image for now.");
+                            if (callback != null)
+                                callback.onImageReceived(source, bitmap);
+                            return;
+                        }
                         mNetworkExecutorService.execute(new Runnable() {
 
                             @Override
                             public void run() {
-                                final Bitmap bitmap = getBitmapFromExternal(key, source);
+                                final Bitmap bitmap = getBitmapFromExternal(key, source, dimension);
                                 mHandler.post(new Runnable() {
                                     @Override
                                     public void run() {
@@ -173,10 +215,10 @@ public class ImageManager {
         return bitmap;
     }
 
-    private Bitmap getBitmapFromExternal(String key, String source) {
+    private Bitmap getBitmapFromExternal(String key, String source, Dimension dimension) {
         byte[] byteArray = copyURLToByteArray(source);
         if (byteArray != null) {
-            Bitmap bitmap = decodeByteArray(byteArray);
+            Bitmap bitmap = Utils.decodeByteArray(byteArray, dimension);
             if (bitmap != null) {
                 try {
                     mDiskCache.put(key, bitmap);
@@ -213,24 +255,6 @@ public class ImageManager {
             IOUtils.closeQuietly(byteArrayOutputStream);
         }
         return null;
-    }
-
-    private static Bitmap decodeByteArray(byte[] byteArray) {
-        try {
-            BitmapFactory.Options bitmapFactoryOptions = getBitmapFactoryOptions();
-            return BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length, bitmapFactoryOptions);
-        } catch (Throwable t) {
-            t.printStackTrace();
-        }
-        return null;
-    }
-
-    private static BitmapFactory.Options getBitmapFactoryOptions() {
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inPurgeable = true;
-        options.inInputShareable = true;
-        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-        return options;
     }
 
     private static ExecutorService newConfiguredThreadPool() {

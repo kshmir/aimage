@@ -1,6 +1,7 @@
 package com.afollestad.aimage;
 
 import android.content.Context;
+import android.view.View;
 
 /**
  * Holds width and height values.
@@ -33,6 +34,15 @@ public class Dimension {
         int px = dpToPx(context, squareDp);
         width = px;
         height = px;
+    }
+
+    /**
+     * Initializes the Dimension with width and height equal to the measured dimensions of a view.
+     * @param view
+     */
+    public Dimension(View view) {
+        width = view.getMeasuredWidth();
+        height = view.getMeasuredHeight();
     }
 
     /**

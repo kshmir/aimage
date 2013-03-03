@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.widget.ImageView;
+import com.afollestad.aimage.Dimension;
 import com.afollestad.aimage.ImageListener;
 import com.afollestad.aimage.ImageManager;
 
@@ -61,9 +62,9 @@ public class AImageView extends ImageView {
 
     protected String lastSource;
 
+
     private void loadFromSource() {
         if (aimage == null || source == null) {
-            setImageBitmap(null);
             return;
         } else if (getMeasuredWidth() == 0 && getMeasuredHeight() == 0) {
             if(aimage.isDebugEnabled())
@@ -88,6 +89,6 @@ public class AImageView extends ImageView {
                 if(aimage.isDebugEnabled())
                     Log.i("AImageView", source + " set to view.");
             }
-        });
+        }, new Dimension(this));
     }
 }
