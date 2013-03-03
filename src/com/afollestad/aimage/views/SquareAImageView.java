@@ -30,7 +30,10 @@ public class SquareAImageView extends AImageView {
         Drawable d = getDrawable();
         if(d != null) {
             int width = MeasureSpec.getSize(widthMeasureSpec);
-            setMeasuredDimension(width, width);
+            if(width > 0)
+                setMeasuredDimension(width, width);
+            else
+                setMeasuredDimension(width, MeasureSpec.getSize(heightMeasureSpec));
         } else {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         }
