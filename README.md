@@ -89,7 +89,8 @@ just that.
 
 ```java
 ImageManager manager = new ImageManager(this);
-manager.setFallbackImage(R.drawable.fallback_image);  // Replace with a drawable resource ID of your choice
+// Replace parameter with a drawable resource ID of your choice
+manager.setFallbackImage(R.drawable.fallback_image);
 ```
 
 This most common case that this would be useful is if you're loading images from the network. If an image fails to download
