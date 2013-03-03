@@ -239,7 +239,9 @@ public class ImageManager {
         ByteArrayOutputStream byteArrayOutputStream = null;
         try {
             if(source.equals(ImageManager.SOURCE_FALLBACK)) {
-                inputStream = context.getResources().openRawResource(fallbackImageId);
+                if(fallbackImageId > 0)
+                    inputStream = context.getResources().openRawResource(fallbackImageId);
+                else return null;
             } else if (source.startsWith("content")) {
                 inputStream = context.getContentResolver().openInputStream(Uri.parse(source));
             } else if (source.startsWith("file")) {

@@ -63,15 +63,24 @@ public class AImageView extends ImageView {
     protected String lastSource;
 
     public void showFallback() {
-        String temp = source;
-        source = ImageManager.SOURCE_FALLBACK;
-        loadFromSource();
-        source = temp;
+        aimage.get(ImageManager.SOURCE_FALLBACK, new ImageListener() {
+            @Override
+            public void onImageReceived(final String source, final Bitmap bitmap) {
+                setImageBitmap(bitmap);
+                if (invalidateOnLoad) {
+                    requestLayout();
+                    invalidate();
+                }
+                if(aimage.isDebugEnabled())
+                    Log.i("AImageView", "Fallback image set to view.");
+            }
+        }, new Dimension(this));
     }
 
     private void loadFromSource() {
-        if(source == null) {
-            showFallback();
+        if(source == null || source.trim().isEmpty()) {
+            if(aimage != null)
+                showFallback();
             return;
         } else if (aimage == null) {
             return;
