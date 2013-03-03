@@ -115,7 +115,31 @@ public class ImageManager {
     }
 
     public Bitmap getFallbackImage(Dimension dimension) {
-        context.getResources().openRawResource(fallbackImageId);
+        String key = getKey("aimage://fallback_image", dimension);
+        Bitmap bitmap = mLruCache.get(key);
+        if (bitmap == null) {
+            bitmap = getBitmapFromDisk(key);
+        } else {
+            log("Got fallback image from the memory cache.");
+        }
+
+        InputStream inputStream = null;
+        ByteArrayOutputStream byteArrayOutputStream = null;
+        try {
+            inputStream = context.getResources().openRawResource(fallbackImageId);
+            byteArrayOutputStream = new ByteArrayOutputStream();
+            IOUtils.copy(inputStream, byteArrayOutputStream);
+            byte[] data = byteArrayOutputStream.toByteArray();
+            log("Got fallback image from resource");
+            return Utils.decodeByteArray(data, dimension);
+        } catch (Exception e) {
+            log(e.getMessage());
+        } finally {
+            IOUtils.closeQuietly(inputStream);
+            IOUtils.closeQuietly(byteArrayOutputStream);
+        }
+        log("Fallback image is null or error occured.");
+        return null;
     }
 
     /**
