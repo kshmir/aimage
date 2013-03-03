@@ -1,7 +1,10 @@
 package com.afollestad.aimage;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 
 public class Utils {
 
@@ -44,5 +47,30 @@ public class Utils {
             t.printStackTrace();
         }
         return null;
+    }
+
+    public static boolean isOnline(Context context) {
+        if (context == null) {
+            return false;
+        }
+        boolean state = false;
+        ConnectivityManager cm = (ConnectivityManager) context
+                .getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        NetworkInfo wifiNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        if (wifiNetwork != null) {
+            state = wifiNetwork.isConnectedOrConnecting();
+        }
+
+        NetworkInfo mobileNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+        if (mobileNetwork != null) {
+            state = mobileNetwork.isConnectedOrConnecting();
+        }
+
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        if (activeNetwork != null) {
+            state = activeNetwork.isConnectedOrConnecting();
+        }
+        return state;
     }
 }

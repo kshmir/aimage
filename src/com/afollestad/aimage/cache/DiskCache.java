@@ -15,9 +15,11 @@ import java.io.FileOutputStream;
 public class DiskCache {
 
     public DiskCache(Context context) {
-        CACHE_DIR = context.getExternalCacheDir();
+        this.context = context;
+        setCacheDirectory(null);
     }
 
+    private Context context;
     private static File CACHE_DIR;
 
     public void put(String key, Bitmap image) throws Exception {
@@ -38,6 +40,9 @@ public class DiskCache {
     }
 
     public void setCacheDirectory(File dir) {
-        CACHE_DIR = dir;
+        if(dir == null)
+            CACHE_DIR = context.getExternalCacheDir();
+        else
+            CACHE_DIR = dir;
     }
 }

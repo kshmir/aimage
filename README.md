@@ -66,6 +66,35 @@ manager.get("http://www.android.com/images/whatsnew/jb-new-logo.png", null, new 
 
 Again, if you want to down sample the image, you can pass an instance of the `Dimension` class for the second parameter to `get()`.
 
+### Changing the Cache Directory
+
+By default, AImage uses your app's external cache directory to cache images, which is usually in a location similar to
+`/sdcard/Android/data/com.example.package_name/cache`. This cache directory can also be cleared from the Android's App Info screen.
+If you want to change the cache directory that's used, it's pretty easy:
+
+```java
+ImageManager manager = new ImageManager(context);
+
+// This is the default cache directory
+manager.setCacheDirectory(context.getExternalCacheDir());
+
+// This will set it to the directory "/sdcard/My Directory"
+manager.setCacheDirectory(new File(Environment.getExternalStorageDirectory(), "My Directory"));
+```
+
+### Changing the Fallback Image
+
+If you want AImage to return an image in the case that an image fails to load, you can specify a fallback image that will allow
+just that.
+
+```java
+ImageManager manager = new ImageManager(this);
+manager.setFallbackImage(R.drawable.fallback_image);  // Replace with a drawable resource ID of your choice
+```
+
+This most common case that this would be useful is if you're loading images from the network. If an image fails to download
+(if it's not cached, you don't have a connection, the server fails to respond, etc.), then the fallback image will be used.
+
 ## Views
 
 ### AImageView

@@ -2,9 +2,8 @@ package com.afollestad.aimage;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.net.Uri;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -13,10 +12,7 @@ import com.afollestad.aimage.cache.DigestUtils;
 import com.afollestad.aimage.cache.DiskCache;
 import com.afollestad.aimage.cache.IOUtils;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
 import java.util.concurrent.*;
 
@@ -38,14 +34,15 @@ public class ImageManager {
             }
         };
         mDiskCache = new DiskCache(context);
+
+        ImageManager manager = new ImageManager(context);
+        manager.setCacheDirectory(context.getExternalCacheDir());  // This is the default cache directory
+
+        manager.setCacheDirectory(new File(Environment.getExternalStorageDirectory(), "My Directory"));
+
+        //manager.setFallbackImage(R.drawable.fallback_image);  // Replace with a drawable resource ID of your choice
     }
 
-    public ImageManager(Context context, File cacheDir, int fallbackId) {
-        this(context);
-        if (cacheDir != null)
-            mDiskCache.setCacheDirectory(cacheDir);
-        this.fallbackImageId = fallbackId;
-    }
 
     private int fallbackImageId;
     private boolean debug;
@@ -58,9 +55,13 @@ public class ImageManager {
 
     protected static final int MEM_CACHE_SIZE_KB = (int) (Runtime.getRuntime().maxMemory() / 2 / 1024);
     protected static final int ASYNC_THREAD_COUNT = (Runtime.getRuntime().availableProcessors() * 4);
+    public static final String SOURCE_FALLBACK = "aimage://fallback_image";
 
-    public final static String SOURCE_FALLBACK = "aimage://fallback_image";
-
+    protected void log(String message) {
+        if (!debug)
+            return;
+        Log.i("AImage.ImageManager", message);
+    }
 
     /**
      * Disabled by default. If enabled, log messages will be printed to the logcat.
@@ -74,37 +75,21 @@ public class ImageManager {
     }
 
     /**
-     * Checks for an internet connection.
+     * Sets the directory that will be used to cache images.
      */
-    public boolean isOnline() {
-        if (context == null) {
-            return false;
-        }
-        boolean state = false;
-        ConnectivityManager cm = (ConnectivityManager) context
-                .getSystemService(Context.CONNECTIVITY_SERVICE);
-
-        NetworkInfo wifiNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-        if (wifiNetwork != null) {
-            state = wifiNetwork.isConnectedOrConnecting();
-        }
-
-        NetworkInfo mobileNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
-        if (mobileNetwork != null) {
-            state = mobileNetwork.isConnectedOrConnecting();
-        }
-
-        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-        if (activeNetwork != null) {
-            state = activeNetwork.isConnectedOrConnecting();
-        }
-        return state;
+    public ImageManager setCacheDirectory(File cacheDir) {
+        if (cacheDir != null)
+            mDiskCache.setCacheDirectory(cacheDir);
+        return this;
     }
 
-    protected void log(String message) {
-        if (!debug)
-            return;
-        Log.i("AImage.ImageManager", message);
+    /**
+     * Sets the resource ID of fallback image that is used when an image can't be loaded, or when you call
+     * {@link com.afollestad.aimage.views.AImageView#showFallback()} from the AImageView.
+     */
+    public ImageManager setFallbackImage(int resourceId) {
+        this.fallbackImageId = resourceId;
+        return this;
     }
 
 
@@ -174,7 +159,7 @@ public class ImageManager {
                             }
                         });
                     } else {
-                        if (!isOnline()) {
+                        if (!Utils.isOnline(context)) {
                             log("Device is offline, getting fallback image...");
                             if (callback != null) {
                                 Bitmap fallback = get(ImageManager.SOURCE_FALLBACK, dimension);
@@ -217,7 +202,7 @@ public class ImageManager {
     }
 
     private Bitmap getBitmapFromExternal(String key, String source, Dimension dimension) {
-        byte[] byteArray = copyURLToByteArray(source);
+        byte[] byteArray = sourceToBytes(source);
         if (byteArray != null) {
             Bitmap bitmap = Utils.decodeByteArray(byteArray, dimension);
             if (bitmap != null) {
@@ -234,9 +219,22 @@ public class ImageManager {
     }
 
 
-    private byte[] copyURLToByteArray(String source) {
+    private byte[] inputStreamToBytes(InputStream stream) {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        try {
+            IOUtils.copy(stream, byteArrayOutputStream);
+        } catch (IOException e) {
+            IOUtils.closeQuietly(byteArrayOutputStream);
+            return null;
+        }
+        return byteArrayOutputStream.toByteArray();
+    }
+
+    private byte[] sourceToBytes(String source) {
         InputStream inputStream = null;
-        ByteArrayOutputStream byteArrayOutputStream = null;
+        byte[] toreturn = null;
+        boolean shouldGetFallback = false;
+
         try {
             if(source.equals(ImageManager.SOURCE_FALLBACK)) {
                 if(fallbackImageId > 0)
@@ -250,16 +248,26 @@ public class ImageManager {
             } else {
                 inputStream = new URL(source).openConnection().getInputStream();
             }
-            byteArrayOutputStream = new ByteArrayOutputStream();
-            IOUtils.copy(inputStream, byteArrayOutputStream);
-            return byteArrayOutputStream.toByteArray();
+            toreturn = inputStreamToBytes(inputStream);
         } catch (Exception e) {
             e.printStackTrace();
+            shouldGetFallback = true;
         } finally {
             IOUtils.closeQuietly(inputStream);
-            IOUtils.closeQuietly(byteArrayOutputStream);
         }
-        return null;
+
+        if(shouldGetFallback && !source.equals(ImageManager.SOURCE_FALLBACK) && fallbackImageId > 0) {
+            try {
+                inputStream = context.getResources().openRawResource(fallbackImageId);
+                toreturn = inputStreamToBytes(inputStream);
+            } catch(Exception e) {
+                e.printStackTrace();
+            } finally {
+                IOUtils.closeQuietly(inputStream);
+            }
+        }
+
+        return toreturn;
     }
 
     private static ExecutorService newConfiguredThreadPool() {
