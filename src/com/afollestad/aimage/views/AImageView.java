@@ -14,6 +14,9 @@ public class AImageView extends ImageView {
     private String source;
     private ImageManager aimage;
     protected boolean invalidateOnLoad;
+    private boolean fitView = true;
+    protected String lastSource;
+
 
     public AImageView(Context context) {
         super(context);
@@ -42,6 +45,9 @@ public class AImageView extends ImageView {
     }
 
 
+    /**
+     * Sets the ImageManager that is used to load images into the view.
+     */
     public AImageView setManager(ImageManager manager) {
         if(manager == null) {
             throw new IllegalArgumentException("The ImageManager cannot be null.");
@@ -50,17 +56,29 @@ public class AImageView extends ImageView {
         return this;
     }
 
+    /**
+     * Sets the source of the image to load into the view.
+     */
     public AImageView setSource(String source) {
         this.source = source;
         return this;
     }
 
+    /**
+     * Turned on by default as it prevents OutOfMemoryExceptions. Sets whether or not the loaded image will be
+     * resized to fit the dimensions of the view.
+     */
+    public AImageView setFitView(boolean fitView) {
+        this.fitView = fitView;
+        return this;
+    }
+
+    /**
+     * Loads an image into the view, using the ImageManager set via #setManager and the source set via #setSource.
+     */
     public void load() {
         loadFromSource();
     }
-
-
-    protected String lastSource;
 
     public void showFallback() {
         aimage.get(ImageManager.SOURCE_FALLBACK, new ImageListener() {
@@ -76,6 +94,7 @@ public class AImageView extends ImageView {
             }
         }, new Dimension(this));
     }
+
 
     private void loadFromSource() {
         if(source == null || source.trim().isEmpty()) {
@@ -107,6 +126,6 @@ public class AImageView extends ImageView {
                 if(aimage.isDebugEnabled())
                     Log.i("AImageView", source + " set to view.");
             }
-        }, new Dimension(this));
+        }, this.fitView ? new Dimension(this) : null);
     }
 }

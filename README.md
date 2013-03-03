@@ -42,10 +42,10 @@ There's other ways of initializing the `Dimension` class to make it easier to ge
 // 50dp by 50dp (using a float value indicates dp)
 Dimension dimenSquaredDp = new Dimension(this, 50.0f);
 
-//50px by 50px (passing no context and an integer indicates pixels)
+// 50px by 50px (passing no context and an integer indicates pixels)
 Dimension dimenSquaredPx = new Dimension(50);
 
-//30px by 50px (passing no context and an integer indicates pixels)
+// 30px by 50px (passing no context and an integer indicates pixels)
 Dimension dimenPx = new Dimension(30, 50);
 ```
 
@@ -90,6 +90,7 @@ ImageManager manager = new ImageManager(this);
 AImageView aview = (AImageView)findViewById(R.id.image);
 aview.setManager(manager)
      .setSource("http://www.android.com/images/whatsnew/jb-new-logo.png")
+     .setFitView(true)  // This is already set to true by default, sets whether or not the image will be resized to fit the view
      .load();
 ````
 
@@ -97,6 +98,15 @@ aview.setManager(manager)
 
 The `AspectAImageView` is the same as the `AImageView` class, but it automatically adjusts its height to keep aspect ratio with
 the image's width (even when the view is in a `RelativeLayout` and you're using `FILL_PARENT`, `MATCH_PARENT`, or `WRAP_CONTENT` for dimensions).
+
+All that you have to do is replace `AImageView` with `AspectAImageView` in your layouts and code, and we'll take care of
+the rest.
+
+### SquareAImageView
+
+The `SquareAImageView` is the same as the `AImageView' class, but it automatically adjusts the height to always equal
+the width of the view, making it a perfect square. It's like dragging the bottom right corner of a window to resize both
+the width and height of a window.
 
 All that you have to do is replace `AImageView` with `AspectAImageView` in your layouts and code, and we'll take care of
 the rest.
