@@ -70,14 +70,15 @@ public class AImageView extends ImageView {
     }
 
     private void loadFromSource() {
-        if (aimage == null || source == null) {
+        if(source == null) {
             showFallback();
+            return;
+        } else if (aimage == null) {
             return;
         } else if (getMeasuredWidth() == 0 && getMeasuredHeight() == 0) {
             if(aimage.isDebugEnabled())
                 Log.i("AImageView", "View not measured yet, waiting...");
             // Wait until the view's width and height are measured
-            showFallback();
             return;
         }
         lastSource = source;
