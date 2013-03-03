@@ -39,9 +39,10 @@ public class ImageManager {
         };
         mDiskCache = new DiskCache(context);
     }
+
     public ImageManager(Context context, File cacheDir, int fallbackId) {
         this(context);
-        if(cacheDir != null)
+        if (cacheDir != null)
             mDiskCache.setCacheDirectory(cacheDir);
         this.fallbackImageId = fallbackId;
     }
@@ -57,6 +58,8 @@ public class ImageManager {
 
     protected static final int MEM_CACHE_SIZE_KB = (int) (Runtime.getRuntime().maxMemory() / 2 / 1024);
     protected static final int ASYNC_THREAD_COUNT = (Runtime.getRuntime().availableProcessors() * 4);
+
+    public final static String SOURCE_FALLBACK = "aimage://fallback_image";
 
 
     /**
@@ -74,7 +77,7 @@ public class ImageManager {
      * Checks for an internet connection.
      */
     public boolean isOnline() {
-        if(context == null) {
+        if (context == null) {
             return false;
         }
         boolean state = false;
@@ -109,37 +112,9 @@ public class ImageManager {
         if (source == null) {
             return null;
         }
-        if(dimension != null)
+        if (dimension != null)
             source += "_" + dimension.toString();
         return DigestUtils.sha256Hex(source);
-    }
-
-    public Bitmap getFallbackImage(Dimension dimension) {
-        String key = getKey("aimage://fallback_image", dimension);
-        Bitmap bitmap = mLruCache.get(key);
-        if (bitmap == null) {
-            bitmap = getBitmapFromDisk(key);
-        } else {
-            log("Got fallback image from the memory cache.");
-        }
-
-        InputStream inputStream = null;
-        ByteArrayOutputStream byteArrayOutputStream = null;
-        try {
-            inputStream = context.getResources().openRawResource(fallbackImageId);
-            byteArrayOutputStream = new ByteArrayOutputStream();
-            IOUtils.copy(inputStream, byteArrayOutputStream);
-            byte[] data = byteArrayOutputStream.toByteArray();
-            log("Got fallback image from resource");
-            return Utils.decodeByteArray(data, dimension);
-        } catch (Exception e) {
-            log(e.getMessage());
-        } finally {
-            IOUtils.closeQuietly(inputStream);
-            IOUtils.closeQuietly(byteArrayOutputStream);
-        }
-        log("Fallback image is null or error occured.");
-        return null;
     }
 
     /**
@@ -199,10 +174,12 @@ public class ImageManager {
                             }
                         });
                     } else {
-                        if(!isOnline()) {
-                            log("Device is offline, returning fallback image for now.");
-                            if (callback != null)
-                                callback.onImageReceived(source, bitmap);
+                        if (!isOnline()) {
+                            log("Device is offline, getting fallback image...");
+                            if (callback != null) {
+                                Bitmap fallback = get(ImageManager.SOURCE_FALLBACK, dimension);
+                                callback.onImageReceived(source, fallback);
+                            }
                             return;
                         }
                         mNetworkExecutorService.execute(new Runnable() {
@@ -261,11 +238,13 @@ public class ImageManager {
         InputStream inputStream = null;
         ByteArrayOutputStream byteArrayOutputStream = null;
         try {
-            if (source.startsWith("content")) {
+            if(source.equals(ImageManager.SOURCE_FALLBACK)) {
+                inputStream = context.getResources().openRawResource(fallbackImageId);
+            } else if (source.startsWith("content")) {
                 inputStream = context.getContentResolver().openInputStream(Uri.parse(source));
-            } else if(source.startsWith("file")) {
-            	Uri uri = Uri.parse(source);
-            	inputStream = new FileInputStream(new File(uri.getPath()));
+            } else if (source.startsWith("file")) {
+                Uri uri = Uri.parse(source);
+                inputStream = new FileInputStream(new File(uri.getPath()));
             } else {
                 inputStream = new URL(source).openConnection().getInputStream();
             }

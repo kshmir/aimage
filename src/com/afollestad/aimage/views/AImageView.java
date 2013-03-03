@@ -62,14 +62,22 @@ public class AImageView extends ImageView {
 
     protected String lastSource;
 
+    public void showFallback() {
+        String temp = source;
+        source = ImageManager.SOURCE_FALLBACK;
+        loadFromSource();
+        source = temp;
+    }
 
     private void loadFromSource() {
         if (aimage == null || source == null) {
+            showFallback();
             return;
         } else if (getMeasuredWidth() == 0 && getMeasuredHeight() == 0) {
             if(aimage.isDebugEnabled())
                 Log.i("AImageView", "View not measured yet, waiting...");
             // Wait until the view's width and height are measured
+            showFallback();
             return;
         }
         lastSource = source;
