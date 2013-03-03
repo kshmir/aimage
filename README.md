@@ -134,7 +134,7 @@ the rest.
 
 ### SquareAImageView
 
-The `SquareAImageView` is the same as the `AImageView' class, but it automatically adjusts the height to always equal
+The `SquareAImageView` is the same as the `AImageView` class, but it automatically adjusts the height to always equal
 the width of the view, making it a perfect square. It's like dragging the bottom right corner of a window to resize both
 the width and height of a window.
 
