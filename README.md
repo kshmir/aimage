@@ -56,6 +56,8 @@ you can do whatever you want with the image.
 
 ```java
 ImageManager manager = new ImageManager(this);
+
+// Replace the `null` parameter with a `Dimension` instance if you want to down sample (like in the above example)
 manager.get("http://www.android.com/images/whatsnew/jb-new-logo.png", null, new ImageListener() {
     @Override
     public void onImageReceived(String source, Bitmap bitmap) {
@@ -78,7 +80,7 @@ ImageManager manager = new ImageManager(context);
 // This is the default cache directory
 manager.setCacheDirectory(context.getExternalCacheDir());
 
-// This will set it to the directory "/sdcard/My Directory"
+// This will set it to the directory `/sdcard/My Directory`
 manager.setCacheDirectory(new File(Environment.getExternalStorageDirectory(), "My Directory"));
 ```
 
@@ -116,6 +118,7 @@ fresh memory cache (the disk cache stays, however).
 
 ```java
 ImageManager manager = new ImageManager(this);
+
 //Replace the view ID with whatever ID you're using in your XML layout
 AImageView aview = (AImageView)findViewById(R.id.image);
 aview.setManager(manager)
