@@ -7,7 +7,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.util.LruCache;
-import com.afollestad.aimage.cache.DigestUtils;
 import com.afollestad.aimage.cache.DiskCache;
 import com.afollestad.aimage.cache.IOUtils;
 
@@ -33,38 +32,30 @@ public class ImageManager {
             }
         };
         mDiskCache = new DiskCache(context);
+        queue = new QueueMap<ImageListener>();
     }
 
 
     private int fallbackImageId;
-    private boolean debug;
+    public final boolean DEBUG = true;
     private Context context;
     private DiskCache mDiskCache;
     private Handler mHandler = new Handler(Looper.getMainLooper());
     private LruCache<String, Bitmap> mLruCache = newConfiguredLruCache();
     private ExecutorService mNetworkExecutorService = newConfiguredThreadPool();
     private ExecutorService mDiskExecutorService = Executors.newCachedThreadPool(new LowPriorityThreadFactory());
+    private QueueMap queue;
 
     protected static final int MEM_CACHE_SIZE_KB = (int) (Runtime.getRuntime().maxMemory() / 2 / 1024);
     protected static final int ASYNC_THREAD_COUNT = (Runtime.getRuntime().availableProcessors() * 4);
     public static final String SOURCE_FALLBACK = "aimage://fallback_image";
 
     protected void log(String message) {
-        if (!debug)
+        if (!DEBUG)
             return;
         Log.i("AImage.ImageManager", message);
     }
 
-    /**
-     * Disabled by default. If enabled, log messages will be printed to the logcat.
-     */
-    public void setDebugEnabled(boolean enabled) {
-        debug = enabled;
-    }
-
-    public boolean isDebugEnabled() {
-        return debug;
-    }
 
     /**
      * Sets the directory that will be used to cache images.
@@ -85,25 +76,11 @@ public class ImageManager {
     }
 
 
-    private static String getKey(String source, Dimension dimension) {
+    private Bitmap get(String source, Dimension dimension) {
         if (source == null) {
             return null;
         }
-        if (dimension != null)
-            source += "_" + dimension.toString();
-        return DigestUtils.sha256Hex(source);
-    }
-
-    /**
-     * Gets an image from a URI on the calling thread and returns the result.
-     *
-     * @param source The URI to get the image from.
-     */
-    public Bitmap get(String source, Dimension dimension) {
-        if (source == null) {
-            return null;
-        }
-        String key = getKey(source, dimension);
+        String key = Utils.getKey(source, dimension);
         Bitmap bitmap = mLruCache.get(key);
         if (bitmap == null) {
             bitmap = getBitmapFromDisk(key);
@@ -126,59 +103,93 @@ public class ImageManager {
      * @param callback The callback that the result will be posted to.
      */
     public void get(final String source, final ImageListener callback, final Dimension dimension) {
+        get(source, callback, dimension, false);
+    }
+
+    private void notify(final String source, final Dimension dimension, final Bitmap image) {
+        synchronized (queue) {
+            String key = Utils.getKey(source, dimension);
+            QueueMap.MultiMapValue<ImageListener> items = queue.get(key);
+            for (ImageListener listener : items) {
+                log("Notifying " + key);
+                if (listener != null)
+                    listener.onImageReceived(source, image);
+            }
+        }
+    }
+
+    private void postCallback(final ImageListener callback, final String source, final Bitmap bitmap, final Dimension dimen, final boolean isNotifying) {
+        mHandler.post(new Runnable() {
+            public void run() {
+                if (callback != null)
+                    callback.onImageReceived(source, bitmap);
+                if (!isNotifying)
+                    ImageManager.this.notify(source, dimen, bitmap);
+            }
+        });
+    }
+
+    /**
+     * Gets an image from a URI on a separate thread and posts the results to a callback.
+     *
+     * @param source   The URI to get the image from.
+     * @param callback The callback that the result will be posted to.
+     */
+    public void get(final String source, final ImageListener callback, final Dimension dimension, final boolean isNotifying) {
         if (!Looper.getMainLooper().equals(Looper.myLooper())) {
             throw new RuntimeException("This must only be executed on the main UI Thread!");
         } else if (source == null) {
             return;
         }
-        final String key = getKey(source, dimension);
-        Bitmap bitmap = mLruCache.get(key);
-        if (bitmap != null && callback != null) {
-            log("Got " + source + " from the memory cache.");
-            callback.onImageReceived(source, bitmap);
-        } else {
-            mDiskExecutorService.execute(new Runnable() {
-                @Override
-                public void run() {
-                    final Bitmap bitmap = getBitmapFromDisk(key);
-                    if (bitmap != null) {
-                        log("Got " + source + " from the disk cache.");
-                        mHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (callback != null)
-                                    callback.onImageReceived(source, bitmap);
-                            }
-                        });
-                    } else {
-                        if (!Utils.isOnline(context)) {
-                            log("Device is offline, getting fallback image...");
-                            if (callback != null) {
-                                Bitmap fallback = get(ImageManager.SOURCE_FALLBACK, dimension);
-                                callback.onImageReceived(source, fallback);
-                            }
-                            return;
-                        }
-                        mNetworkExecutorService.execute(new Runnable() {
 
-                            @Override
-                            public void run() {
-                                final Bitmap bitmap = getBitmapFromExternal(key, source, dimension);
-                                mHandler.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        log("Got " + source + " from external source.");
-                                        if (callback != null)
-                                            callback.onImageReceived(source, bitmap);
-                                    }
-                                });
-                            }
-                        });
-                    }
-                }
-            });
+        final String key = Utils.getKey(source, dimension);
+        Bitmap bitmap = mLruCache.get(key);
+        if (bitmap != null) {
+            log("Got " + source + " from the memory cache.");
+            postCallback(callback, source, bitmap, dimension, true);
+            return;
         }
+
+        mDiskExecutorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                final Bitmap bitmap = getBitmapFromDisk(key);
+                if (bitmap != null) {
+                    log("Got " + source + " from the disk cache.");
+                    postCallback(callback, source, bitmap, dimension, true);
+                    return;
+                }
+
+                if (!Utils.isOnline(context) && source.startsWith("http")) {
+                    log("Device is offline, getting fallback image...");
+                    Bitmap fallback = get(ImageManager.SOURCE_FALLBACK, dimension);
+                    postCallback(callback, source, fallback, dimension, true);
+                    return;
+                }
+
+                mNetworkExecutorService.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        synchronized (queue) {
+                            if (!isNotifying) {
+                                if (queue.containsKey(key)) {
+                                    log("Appended another callback for " + key + " to queue.");
+                                    queue.add(key, callback);
+                                    return;
+                                }
+                                log("Added new callback for " + key + " to queue.");
+                                queue.add(key, null);
+                            }
+                        }
+                        final Bitmap bitmap = getBitmapFromExternal(key, source, dimension);
+                        log("Got " + source + " from external source.");
+                        postCallback(callback, source, bitmap, dimension, isNotifying);
+                    }
+                });
+            }
+        });
     }
+
 
     private Bitmap getBitmapFromDisk(String key) {
         Bitmap bitmap = null;
@@ -210,7 +221,6 @@ public class ImageManager {
         return null;
     }
 
-
     private byte[] inputStreamToBytes(InputStream stream) {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         try {
@@ -228,8 +238,8 @@ public class ImageManager {
         boolean shouldGetFallback = false;
 
         try {
-            if(source.equals(ImageManager.SOURCE_FALLBACK)) {
-                if(fallbackImageId > 0)
+            if (source.equals(ImageManager.SOURCE_FALLBACK)) {
+                if (fallbackImageId > 0)
                     inputStream = context.getResources().openRawResource(fallbackImageId);
                 else return null;
             } else if (source.startsWith("content")) {
@@ -248,11 +258,11 @@ public class ImageManager {
             IOUtils.closeQuietly(inputStream);
         }
 
-        if(shouldGetFallback && !source.equals(ImageManager.SOURCE_FALLBACK) && fallbackImageId > 0) {
+        if (shouldGetFallback && !source.equals(ImageManager.SOURCE_FALLBACK) && fallbackImageId > 0) {
             try {
                 inputStream = context.getResources().openRawResource(fallbackImageId);
                 toreturn = inputStreamToBytes(inputStream);
-            } catch(Exception e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             } finally {
                 IOUtils.closeQuietly(inputStream);

@@ -34,7 +34,7 @@ public class DiskCache {
     public Bitmap get(String key) throws Exception {
         File fi = new File(CACHE_DIR, key);
         if(!fi.exists()) {
-            throw new Exception("File '" + fi.getAbsolutePath() + "' not found.");
+            return null;
         }
         return BitmapFactory.decodeFile(fi.getAbsolutePath());
     }

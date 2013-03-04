@@ -5,6 +5,22 @@ makes image management (downloading, caching, resizing to fit views, etc.) very 
 and makes it possible to do so with only a few lines of code (or by putting an `AImageView` or `AspectAImageView` in your XML
 layouts).
 
+## Permissions
+
+For disk caching, you will need the following permissions in your manifest:
+
+```xml
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+```
+
+For retrieving images over the network, you will also need these permissions in your manifest:
+
+```xml
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+<uses-permission android:name="android.permission.INTERNET" />
+```
+
 ## Using the ImageManager
 
 The `ImageManager` is the most important class in the AImage library. It handles downloading images, and it handles

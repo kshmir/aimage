@@ -89,6 +89,14 @@ public class Dimension {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if(!(o instanceof Dimension))
+            return false;
+        Dimension other = (Dimension)o;
+        return other.getWidth() == this.getWidth() && other.getHeight() == this.getHeight();
+    }
+
+    @Override
     public String toString() {
         return width + "x" + height;
     }

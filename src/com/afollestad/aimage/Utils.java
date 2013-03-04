@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import com.afollestad.aimage.cache.DigestUtils;
 
 public class Utils {
 
@@ -72,5 +73,14 @@ public class Utils {
             state = activeNetwork.isConnectedOrConnecting();
         }
         return state;
+    }
+
+    public static String getKey(String source, Dimension dimension) {
+        if (source == null) {
+            return null;
+        }
+        if (dimension != null)
+            source += "_" + dimension.toString();
+        return DigestUtils.sha256Hex(source);
     }
 }

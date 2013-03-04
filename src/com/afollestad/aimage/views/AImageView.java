@@ -8,6 +8,7 @@ import android.widget.ImageView;
 import com.afollestad.aimage.Dimension;
 import com.afollestad.aimage.ImageListener;
 import com.afollestad.aimage.ImageManager;
+import com.afollestad.aimage.Utils;
 
 public class AImageView extends ImageView {
 
@@ -39,7 +40,7 @@ public class AImageView extends ImageView {
          * insures that correct dimensions will be used for the image loading size to optimize memory.
          */
         super.onSizeChanged(w, h, oldw, oldh);
-        if(aimage != null && aimage.isDebugEnabled())
+        if(aimage != null && aimage.DEBUG)
             Log.i("AImageView", "onSizeChanged -- " + w + ":" + h);
         loadFromSource();
     }
@@ -96,7 +97,7 @@ public class AImageView extends ImageView {
                     requestLayout();
                     invalidate();
                 }
-                if(aimage.isDebugEnabled())
+                if(aimage.DEBUG)
                     Log.i("AImageView", "Fallback image set to view.");
             }
         }, new Dimension(this));
@@ -110,18 +111,19 @@ public class AImageView extends ImageView {
             showFallback();
             return;
         } else if (getMeasuredWidth() == 0 && getMeasuredHeight() == 0) {
-            if(aimage.isDebugEnabled())
+            if(aimage.DEBUG)
                 Log.i("AImageView", "View not measured yet, waiting...");
             // Wait until the view's width and height are measured
             return;
         }
 
         lastSource = source;
+        final Dimension dimen = this.fitView ? new Dimension(this) : null;
         aimage.get(this.source, new ImageListener() {
             @Override
             public void onImageReceived(final String source, final Bitmap bitmap) {
                 if(lastSource != null && !lastSource.equals(source)) {
-                    if(aimage.isDebugEnabled())
+                    if(aimage.DEBUG)
                         Log.i("AImageView", "View source changed since download started, not setting " + source + " to view.");
                     return;
                 }
@@ -135,11 +137,11 @@ public class AImageView extends ImageView {
                             requestLayout();
                             invalidate();
                         }
-                        if(aimage.isDebugEnabled())
-                            Log.i("AImageView", source + " set to view.");
+                        if(aimage.DEBUG)
+                            Log.i("AImageView", source + " set to view " + Utils.getKey(source, dimen));
                     }
                 });
             }
-        }, this.fitView ? new Dimension(this) : null);
+        }, dimen);
     }
 }
