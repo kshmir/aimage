@@ -37,7 +37,7 @@ public class ImageManager {
 
 
     private int fallbackImageId;
-    public final boolean DEBUG = true;
+    public final boolean DEBUG = false;
     private Context context;
     private DiskCache mDiskCache;
     private Handler mHandler = new Handler(Looper.getMainLooper());
