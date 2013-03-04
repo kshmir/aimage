@@ -155,7 +155,7 @@ public class ImageManager {
                     @Override
                     public void run() {
                         final Bitmap bitmap = getBitmapFromExternal(key, source, dimension);
-                            log("Got " + source + " from external source.");
+                        log("Got " + source + " from external source.");
                         postCallback(callback, source, bitmap);
                     }
                 });
@@ -182,10 +182,13 @@ public class ImageManager {
         if (byteArray != null) {
             Bitmap bitmap = Utils.decodeByteArray(byteArray, dimension);
             if (bitmap != null) {
-                try {
-                    mDiskCache.put(key, bitmap);
-                } catch (Exception e) {
-                    e.printStackTrace();
+                if (!source.startsWith("content") && !source.startsWith("file")) {
+                    // If the source is already from the local disk, don't cache it locally again.
+                    try {
+                        mDiskCache.put(key, bitmap);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
                 mLruCache.put(key, bitmap);
                 return bitmap;
