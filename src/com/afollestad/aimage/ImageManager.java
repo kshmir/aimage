@@ -32,7 +32,6 @@ public class ImageManager {
             }
         };
         mDiskCache = new DiskCache(context);
-        queue = new QueueMap<ImageListener>();
     }
 
 
@@ -44,7 +43,6 @@ public class ImageManager {
     private LruCache<String, Bitmap> mLruCache = newConfiguredLruCache();
     private ExecutorService mNetworkExecutorService = newConfiguredThreadPool();
     private ExecutorService mDiskExecutorService = Executors.newCachedThreadPool(new LowPriorityThreadFactory());
-    private QueueMap queue;
 
     protected static final int MEM_CACHE_SIZE_KB = (int) (Runtime.getRuntime().maxMemory() / 2 / 1024);
     protected static final int ASYNC_THREAD_COUNT = (Runtime.getRuntime().availableProcessors() * 4);
@@ -106,25 +104,11 @@ public class ImageManager {
         get(source, callback, dimension, false);
     }
 
-    private void notify(final String source, final Dimension dimension, final Bitmap image) {
-        synchronized (queue) {
-            String key = Utils.getKey(source, dimension);
-            QueueMap.MultiMapValue<ImageListener> items = queue.get(key);
-            for (ImageListener listener : items) {
-                log("Notifying " + key);
-                if (listener != null)
-                    listener.onImageReceived(source, image);
-            }
-        }
-    }
-
-    private void postCallback(final ImageListener callback, final String source, final Bitmap bitmap, final Dimension dimen, final boolean isNotifying) {
+    private void postCallback(final ImageListener callback, final String source, final Bitmap bitmap) {
         mHandler.post(new Runnable() {
             public void run() {
                 if (callback != null)
                     callback.onImageReceived(source, bitmap);
-                if (!isNotifying)
-                    ImageManager.this.notify(source, dimen, bitmap);
             }
         });
     }
@@ -146,7 +130,7 @@ public class ImageManager {
         Bitmap bitmap = mLruCache.get(key);
         if (bitmap != null) {
             log("Got " + source + " from the memory cache.");
-            postCallback(callback, source, bitmap, dimension, true);
+            postCallback(callback, source, bitmap);
             return;
         }
 
@@ -156,34 +140,23 @@ public class ImageManager {
                 final Bitmap bitmap = getBitmapFromDisk(key);
                 if (bitmap != null) {
                     log("Got " + source + " from the disk cache.");
-                    postCallback(callback, source, bitmap, dimension, true);
+                    postCallback(callback, source, bitmap);
                     return;
                 }
 
                 if (!Utils.isOnline(context) && source.startsWith("http")) {
                     log("Device is offline, getting fallback image...");
                     Bitmap fallback = get(ImageManager.SOURCE_FALLBACK, dimension);
-                    postCallback(callback, source, fallback, dimension, true);
+                    postCallback(callback, source, fallback);
                     return;
                 }
 
                 mNetworkExecutorService.execute(new Runnable() {
                     @Override
                     public void run() {
-                        synchronized (queue) {
-                            if (!isNotifying) {
-                                if (queue.containsKey(key)) {
-                                    log("Appended another callback for " + key + " to queue.");
-                                    queue.add(key, callback);
-                                    return;
-                                }
-                                log("Added new callback for " + key + " to queue.");
-                                queue.add(key, null);
-                            }
-                        }
                         final Bitmap bitmap = getBitmapFromExternal(key, source, dimension);
-                        log("Got " + source + " from external source.");
-                        postCallback(callback, source, bitmap, dimension, isNotifying);
+                            log("Got " + source + " from external source.");
+                        postCallback(callback, source, bitmap);
                     }
                 });
             }
