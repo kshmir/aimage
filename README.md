@@ -157,5 +157,13 @@ The `SquareAImageView` is the same as the `AImageView` class, but it automatical
 the width of the view, making it a perfect square. It's like dragging the bottom right corner of a window to resize both
 the width and height of a window.
 
-All that you have to do is replace `AImageView` with `AspectAImageView` in your layouts and code, and we'll take care of
+All that you have to do is replace `AImageView` with `SquareAImageView` in your layouts and code, and we'll take care of
+the rest.
+
+### HeightSquareAImageView
+
+The `HeightSquareAImageView` is the same as the `SquareAImageView` class, but instead of adjusting the height to always equal
+the width, the width is automatically adjusted to equal the height of the view.
+
+All that you have to do is replace `AImageView` with `HeightSquareAImageView` in your layouts and code, and we'll take care of
 the rest.
