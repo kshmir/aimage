@@ -1,11 +1,12 @@
-# Introduction
+Introduction
+============
 
 AImage is an easy to use image management system for Android apps. We all know Android is an amazing OS, but the Android SDK
 makes image management (downloading, caching, resizing to fit views, etc.) very difficult; AImage does all this for you
 and makes it possible to do so with only a few lines of code (or by putting an `AImageView` or `AspectAImageView` in your XML
 layouts).
 
-## Permissions
+### Manifest Permissions
 
 For disk caching, you will need the following permissions in your manifest:
 
@@ -21,13 +22,14 @@ For retrieving images over the network, you will also need these permissions in 
 <uses-permission android:name="android.permission.INTERNET" />
 ```
 
-## Using the ImageManager
+Using the ImageManager
+======================
 
 The `ImageManager` is the most important class in the AImage library. It handles downloading images, and it handles
 caching them on the disk and in memory so they can quickly be retrieved.
 
-It's recommend that you only initialize the `ImageManager` once and use the same instance everywhere, since a single
-instance holds your memory cache and creating a new instance would start with a fresh memory cache (the disk cache stays, however).
+__It's recommended that you only initialize the `ImageManager` once and use the same instance everywhere, since a single
+instance holds your memory cache and creating a new instance would start with a fresh memory cache (the disk cache stays, obviously).__
 
 ### Basics
 
@@ -55,8 +57,11 @@ Bitmap jellybean = manager.get("http://www.android.com/images/whatsnew/jb-new-lo
 There's other ways of initializing the `Dimension` class to make it easier to get what you need.
 
 ```java
-// 50dp by 50dp (using a float value indicates dp)
+// 50dp by 50dp (passing a context and using a float value indicates dp)
 Dimension dimenSquaredDp = new Dimension(this, 50.0f);
+
+// 50dp by 20dp (passing a context and using float values indicates dp)
+Dimension dimenDp = new Dimension(this, 50.0f, 20.0f);
 
 // 50px by 50px (passing no context and an integer indicates pixels)
 Dimension dimenSquaredPx = new Dimension(50);
@@ -112,9 +117,10 @@ manager.setFallbackImage(R.drawable.fallback_image);
 ```
 
 This most common case that this would be useful is if you're loading images from the network. If an image fails to download
-(if it's not cached, you don't have a connection, the server fails to respond, etc.), then the fallback image will be used.
+(if it's not cached and you don't have a connection, the server fails to respond, etc.), then the fallback image will be used.
 
-## Views
+Views
+=====
 
 ### AImageView
 
@@ -123,25 +129,37 @@ the `ImageManager`, it also waits until it's been measured (which isn't immediat
 to fit its own dimensions.
 
 The `AImageView` takes precautions so that it doesn't download and display the wrong image when you're
-scrolling quickly in a ListView (which is a common problem for people that have their own image management implementations on Android).
-This problem is caused by views being recycled and re-used, the library automatically handles cancelling previous download threads
-and it makes sure the right image is shown when the threads are done working.
+scrolling quickly in a ListView (which is a common problem for people that have their own image management implementations on Android);
+this problem is caused by views being recycled and re-used.
 
-To implement the `AImageView` in your XML layout, just replace `ImageView` with `com.afollestad.aimage.views.AImageView`,
-then use code like what's shown below. Again, it's recommend that you only initialize the `ImageManager` once and use the
-same instance everywhere, since a single instance holds your memory cache and creating a new instance would start with a
-fresh memory cache (the disk cache stays, however).
+To implement the `AImageView` in your XML layout, just replace `ImageView` with `com.afollestad.aimage.views.AImageView` like this:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<com.afollestad.aimage.views.AImageView
+            android:id="@+id/imageView"
+            android:scaleType="fitXY"
+            android:layout_width="120dp"
+            android:layout_height="120dp" />
+```
+
+And implement code like this:
 
 ```java
 ImageManager manager = new ImageManager(this);
 
 //Replace the view ID with whatever ID you're using in your XML layout
 AImageView aview = (AImageView)findViewById(R.id.image);
+
 aview.setManager(manager)
      .setSource("http://www.android.com/images/whatsnew/jb-new-logo.png")
      .setFitView(true)  // This is already set to true by default, sets whether or not the image will be resized to fit the view
      .load();
 ````
+
+__Again, it's recommended that you only initialize the `ImageManager` once and use the
+same instance everywhere, since a single instance holds your memory cache and creating a new instance would start with a)
+fresh memory cache (the disk cache stays, obviously).__
 
 ### AspectAImageView
 
