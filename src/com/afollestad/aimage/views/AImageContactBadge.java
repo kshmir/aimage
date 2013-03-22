@@ -82,32 +82,11 @@ public class AImageContactBadge extends QuickContactBadge {
         loadFromSource();
     }
 
-    /**
-     * Loads the fallback image set from the {@link ImageManager} set via #setManager.
-     */
-    public void showFallback() {
-        if(aimage == null)
-            throw new IllegalStateException("You cannot load the fallback image until you have set a ImageManager via setManager().");
-        aimage.get(ImageManager.SOURCE_FALLBACK, new ImageListener() {
-            @Override
-            public void onImageReceived(final String source, final Bitmap bitmap) {
-                setImageBitmap(bitmap);
-                if (invalidateOnLoad) {
-                    requestLayout();
-                    invalidate();
-                }
-                if(aimage.DEBUG)
-                    Log.i("AImageView", "Fallback image set to view.");
-            }
-        }, new Dimension(this));
-    }
-
-
     private void loadFromSource() {
         if (aimage == null) {
             return;
         } else if(source == null || source.trim().isEmpty()) {
-            showFallback();
+        	setImageToDefault();
             return;
         } else if (getMeasuredWidth() == 0 && getMeasuredHeight() == 0) {
             if(aimage.DEBUG)
