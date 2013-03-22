@@ -219,12 +219,8 @@ public class ImageManager {
                 if (fallbackImageId > 0)
                     inputStream = context.getResources().openRawResource(fallbackImageId);
                 else return null;
-            } else if (source.startsWith("content")) {
-            	if(source.toString().startsWith("content://com.android.contacts")) {
-            		inputStream = ContactsContract.Contacts.openContactPhotoInputStream(context.getContentResolver(), Uri.parse(source));
-            	} else { 
-					inputStream = context.getContentResolver().openInputStream(Uri.parse(source));
-            	}
+            } else if (source.startsWith("content")) { 
+				inputStream = context.getContentResolver().openInputStream(Uri.parse(source));
             } else if (source.startsWith("file")) {
                 Uri uri = Uri.parse(source);
                 inputStream = new FileInputStream(new File(uri.getPath()));
