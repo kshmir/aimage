@@ -77,6 +77,7 @@ public class AImageContactBadge extends QuickContactBadge {
      * Loads an image into the view, using the ImageManager set via #setManager and the source set via #setSource.
      */
     public void load() {
+    	setImageToDefault();
         if(aimage == null)
             throw new IllegalStateException("You cannot call load() on the AImageView until you have set a ImageManager via setManager().");
         loadFromSource();
