@@ -101,26 +101,7 @@ public class ImageManager {
      * @param callback The callback that the result will be posted to.
      */
     public void get(final String source, final ImageListener callback, final Dimension dimension) {
-        get(source, callback, dimension, false);
-    }
-
-    private void postCallback(final ImageListener callback, final String source, final Bitmap bitmap) {
-        mHandler.post(new Runnable() {
-            public void run() {
-                if (callback != null)
-                    callback.onImageReceived(source, bitmap);
-            }
-        });
-    }
-
-    /**
-     * Gets an image from a URI on a separate thread and posts the results to a callback.
-     *
-     * @param source   The URI to get the image from.
-     * @param callback The callback that the result will be posted to.
-     */
-    public void get(final String source, final ImageListener callback, final Dimension dimension, final boolean isNotifying) {
-        if (!Looper.getMainLooper().equals(Looper.myLooper())) {
+    	if (!Looper.getMainLooper().equals(Looper.myLooper())) {
             throw new RuntimeException("This must only be executed on the main UI Thread!");
         } else if (source == null) {
             return;
@@ -163,6 +144,14 @@ public class ImageManager {
         });
     }
 
+    private void postCallback(final ImageListener callback, final String source, final Bitmap bitmap) {
+        mHandler.post(new Runnable() {
+            public void run() {
+                if (callback != null)
+                    callback.onImageReceived(source, bitmap);
+            }
+        });
+    }
 
     private Bitmap getBitmapFromDisk(String key) {
         Bitmap bitmap = null;
