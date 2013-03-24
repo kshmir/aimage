@@ -73,7 +73,6 @@ public class ImageManager {
         return this;
     }
 
-
     private Bitmap get(String source, Dimension dimension) {
         if (source == null) {
             return null;

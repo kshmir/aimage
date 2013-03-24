@@ -111,7 +111,10 @@ public class AImageContactBadge extends QuickContactBadge {
                 AImageContactBadge.this.post(new Runnable() {
                     @Override
                     public void run() {
-                        setImageBitmap(bitmap);
+                    	if(bitmap == null)
+                    		setImageToDefault();
+                    	else
+                    		setImageBitmap(bitmap);
                         if (invalidateOnLoad) {
                             requestLayout();
                             invalidate();
