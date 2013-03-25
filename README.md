@@ -1,10 +1,7 @@
 Introduction
 ============
 
-AImage is an easy to use image management system for Android apps. We all know Android is an amazing OS, but the Android SDK
-makes image management (downloading, caching, resizing to fit views, etc.) very difficult; AImage does all this for you
-and makes it possible to do so with only a few lines of code (or by putting an `AImageView` or `AspectAImageView` in your XML
-layouts).
+AImage is an easy to use image management system for Android apps. We all know Android is an amazing OS, but the Android SDK makes image management (downloading, caching, resizing to fit views, etc.) very difficult; AImage does all this for you and makes it possible to do so with only a few lines of code (or by putting one of the many view types of the library in your XML layouts).
 
 ### Manifest Permissions
 
