@@ -120,7 +120,7 @@ This most common case that this would be useful is if you're loading images from
 (if it's not cached and you don't have a connection, the server fails to respond, etc.), then the fallback image will be used.
 
 Views
-=====
+======
 
 ### AImageView
 
@@ -185,3 +185,7 @@ the width, the width is automatically adjusted to equal the height of the view.
 
 All that you have to do is replace `AImageView` with `HeightSquareAImageView` in your layouts and code, and we'll take care of
 the rest.
+
+### AImageContactBadge
+
+The `AImageContactBadge` is basically a `QuickContactBadge` (from the stock SDK) version of the `AImageView`. It allows you to assign an email address or phone number to show a contact badge when the view is pressed. It also allows use of `setImageToDefault()`, which shows a default silhouette image (this replaces the fallback image functionality of the regular `AImageView`).
