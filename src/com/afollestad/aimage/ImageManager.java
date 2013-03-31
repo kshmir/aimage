@@ -73,7 +73,12 @@ public class ImageManager {
         return this;
     }
 
-    private Bitmap get(String source, Dimension dimension) {
+    /**
+     * Gets an image from a URI on the thread (Android doesn't allow this on the main UI thread) and returns the result.
+     *
+     * @param source   The URI to get the image from.
+     */
+    public Bitmap get(String source, Dimension dimension) {
         if (source == null) {
             return null;
         }
