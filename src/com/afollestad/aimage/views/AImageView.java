@@ -56,11 +56,27 @@ public class AImageView extends ImageView {
     }
 
     /**
+     * Gets the ImageManager that's used by this view to load and cache images.
+     * @return
+     */
+    public ImageManager getImageManager() {
+    	return this.aimage;
+    }
+    
+    /**
      * Sets the source of the image to load into the view.
      */
     public AImageView setSource(String source) {
         this.source = source;
         return this;
+    }
+    
+    /**
+     * Gets the source of the last loaded image.
+     * @return
+     */
+    public String getSource() {
+    	return this.source;
     }
 
     /**

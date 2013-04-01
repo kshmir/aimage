@@ -1,11 +1,14 @@
 package com.afollestad.aimage;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import com.afollestad.aimage.cache.DigestUtils;
 
 public class Utils {
 
@@ -81,6 +84,20 @@ public class Utils {
         }
         if (dimension != null)
             source += "_" + dimension.toString();
-        return DigestUtils.sha256Hex(source);
+        try {
+			return URLEncoder.encode(source, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+        return null;
+    }
+    
+    public static String getKeyUrl(String key) {
+    	try {
+			key = URLDecoder.decode(key, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+    	return key.substring(0, key.lastIndexOf("_") - 1);
     }
 }

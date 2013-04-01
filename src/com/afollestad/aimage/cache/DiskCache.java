@@ -24,7 +24,7 @@ public class DiskCache {
 
     public void put(String key, Bitmap image) throws Exception {
         try {
-            FileOutputStream os = new FileOutputStream(new File(CACHE_DIR, key));
+            FileOutputStream os = new FileOutputStream(new File(CACHE_DIR, key + ".jpeg"));
             image.compress(Bitmap.CompressFormat.JPEG, 100, os);
         } catch (Exception e) {
             throw e;
@@ -32,11 +32,16 @@ public class DiskCache {
     }
 
     public Bitmap get(String key) throws Exception {
-        File fi = new File(CACHE_DIR, key);
+        File fi = new File(CACHE_DIR, key + ".jpeg");
         if(!fi.exists()) {
             return null;
         }
         return BitmapFactory.decodeFile(fi.getAbsolutePath());
+    }
+    
+    public String getFilePath(String key)  {
+    	File fi = new File(CACHE_DIR, key + ".jpeg");
+    	return fi.getPath();
     }
 
     public void setCacheDirectory(File dir) {
