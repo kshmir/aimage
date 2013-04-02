@@ -48,7 +48,8 @@ public class ImageManager {
     protected static final int ASYNC_THREAD_COUNT = (Runtime.getRuntime().availableProcessors() * 4);
     public static final String SOURCE_FALLBACK = "aimage://fallback_image";
 
-    protected void log(String message) {
+    @SuppressWarnings("unused")
+	protected void log(String message) {
         if (!DEBUG)
             return;
         Log.i("AImage.ImageManager", message);
