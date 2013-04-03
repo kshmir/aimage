@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.View;
 import android.widget.ImageView;
 import com.afollestad.aimage.Dimension;
 import com.afollestad.aimage.ImageListener;
@@ -17,7 +18,7 @@ public class AImageView extends ImageView {
     protected boolean invalidateOnLoad;
     private boolean fitView = true;
     protected String lastSource;
-
+    private View loadingView;
 
     public AImageView(Context context) {
         super(context);
@@ -89,6 +90,15 @@ public class AImageView extends ImageView {
     }
 
     /**
+     * Sets the view that will become visible when the view begins loading an image, and will be hidden when the 
+     * view finishes loading an image. The imageview itself will also be hidden during loading if a loading view is set.
+     */
+    public AImageView setLoadingView(View view) {
+    	this.loadingView = view;
+    	return this;
+    }
+    
+    /**
      * Loads an image into the view, using the ImageManager set via #setManager and the source set via #setSource.
      */
     public void load() {
@@ -133,6 +143,10 @@ public class AImageView extends ImageView {
 
         lastSource = source;
         final Dimension dimen = this.fitView ? new Dimension(this) : null;
+        if(loadingView != null) {
+        	loadingView.setVisibility(View.VISIBLE);
+        	this.setVisibility(View.GONE);
+        }
         aimage.get(this.source, new ImageListener() {
             @Override
             public void onImageReceived(final String source, final Bitmap bitmap) {
@@ -150,6 +164,10 @@ public class AImageView extends ImageView {
                         if (invalidateOnLoad) {
                             requestLayout();
                             invalidate();
+                        }
+                        if(loadingView != null) {
+                        	loadingView.setVisibility(View.GONE);
+                        	AImageView.this.setVisibility(View.VISIBLE);
                         }
                         if(aimage.DEBUG)
                             Log.i("AImageView", source + " set to view " + Utils.getKey(source, dimen));
