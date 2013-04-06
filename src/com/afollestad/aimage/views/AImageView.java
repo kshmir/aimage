@@ -113,6 +113,8 @@ public class AImageView extends ImageView {
     public void showFallback() {
         if(aimage == null)
             throw new IllegalStateException("You cannot load the fallback image until you have set a ImageManager via setManager().");
+        if(aimage.isDebugEnabled())
+            Log.i("AImageView", "Loading fallback image for view...");
         aimage.get(ImageManager.SOURCE_FALLBACK, new ImageListener() {
             @Override
             public void onImageReceived(final String source, final Bitmap bitmap) {
@@ -130,6 +132,8 @@ public class AImageView extends ImageView {
 
     private void loadFromSource() {
         if (aimage == null) {
+        	if(aimage.isDebugEnabled())
+                Log.i("AImageView", "Loading cancelled, image manager is null...");
             return;
         } else if(source == null || source.trim().isEmpty()) {
             showFallback();
@@ -137,7 +141,6 @@ public class AImageView extends ImageView {
         } else if (getMeasuredWidth() == 0 && getMeasuredHeight() == 0) {
             if(aimage.isDebugEnabled())
                 Log.i("AImageView", "View not measured yet, waiting...");
-            // Wait until the view's width and height are measured
             return;
         }
 
