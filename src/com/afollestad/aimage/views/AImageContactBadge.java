@@ -90,7 +90,7 @@ public class AImageContactBadge extends QuickContactBadge {
         	setImageToDefault();
             return;
         } else if (getMeasuredWidth() == 0 && getMeasuredHeight() == 0) {
-            if(aimage.DEBUG)
+            if(aimage.isDebugEnabled())
                 Log.i("AImageView", "View not measured yet, waiting...");
             // Wait until the view's width and height are measured
             return;
@@ -102,7 +102,7 @@ public class AImageContactBadge extends QuickContactBadge {
             @Override
             public void onImageReceived(final String source, final Bitmap bitmap) {
                 if(lastSource != null && !lastSource.equals(source)) {
-                    if(aimage.DEBUG)
+                    if(aimage.isDebugEnabled())
                         Log.i("AImageView", "View source changed since download started, not setting " + source + " to view.");
                     return;
                 }
@@ -119,7 +119,7 @@ public class AImageContactBadge extends QuickContactBadge {
                             requestLayout();
                             invalidate();
                         }
-                        if(aimage.DEBUG)
+                        if(aimage.isDebugEnabled())
                             Log.i("AImageView", source + " set to view " + Utils.getKey(source, dimen));
                     }
                 });

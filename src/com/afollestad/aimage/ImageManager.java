@@ -36,7 +36,7 @@ public class ImageManager {
 
 
     private int fallbackImageId;
-    public final boolean DEBUG = false;
+    private boolean DEBUG = false;
     private Context context;
     private DiskCache mDiskCache;
     private Handler mHandler = new Handler(Looper.getMainLooper());
@@ -48,13 +48,20 @@ public class ImageManager {
     protected static final int ASYNC_THREAD_COUNT = (Runtime.getRuntime().availableProcessors() * 4);
     public static final String SOURCE_FALLBACK = "aimage://fallback_image";
 
-    @SuppressWarnings("unused")
 	protected void log(String message) {
         if (!DEBUG)
             return;
         Log.i("AImage.ImageManager", message);
     }
 
+	public boolean isDebugEnabled() {
+		return DEBUG;
+	}
+	
+	public ImageManager setDebugEnabled(boolean enabled) {
+		this.DEBUG = enabled;
+		return this;
+	}
 
     /**
      * Sets the directory that will be used to cache images.

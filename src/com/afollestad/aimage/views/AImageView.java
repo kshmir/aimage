@@ -121,7 +121,7 @@ public class AImageView extends ImageView {
                     requestLayout();
                     invalidate();
                 }
-                if(aimage.DEBUG)
+                if(aimage.isDebugEnabled())
                     Log.i("AImageView", "Fallback image set to view.");
             }
         }, new Dimension(this));
@@ -135,7 +135,7 @@ public class AImageView extends ImageView {
             showFallback();
             return;
         } else if (getMeasuredWidth() == 0 && getMeasuredHeight() == 0) {
-            if(aimage.DEBUG)
+            if(aimage.isDebugEnabled())
                 Log.i("AImageView", "View not measured yet, waiting...");
             // Wait until the view's width and height are measured
             return;
@@ -151,7 +151,7 @@ public class AImageView extends ImageView {
             @Override
             public void onImageReceived(final String source, final Bitmap bitmap) {
                 if(lastSource != null && !lastSource.equals(source)) {
-                    if(aimage.DEBUG)
+                    if(aimage.isDebugEnabled())
                         Log.i("AImageView", "View source changed since download started, not setting " + source + " to view.");
                     return;
                 }
@@ -169,7 +169,7 @@ public class AImageView extends ImageView {
                         	loadingView.setVisibility(View.GONE);
                         	AImageView.this.setVisibility(View.VISIBLE);
                         }
-                        if(aimage.DEBUG)
+                        if(aimage.isDebugEnabled())
                             Log.i("AImageView", source + " set to view " + Utils.getKey(source, dimen));
                     }
                 });
