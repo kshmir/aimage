@@ -132,8 +132,6 @@ public class AImageView extends ImageView {
 
     private void loadFromSource() {
         if (aimage == null) {
-        	if(aimage.isDebugEnabled())
-                Log.i("AImageView", "Loading cancelled, image manager is null...");
             return;
         } else if(source == null || source.trim().isEmpty()) {
             showFallback();
